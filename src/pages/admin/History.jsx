@@ -184,8 +184,8 @@ export default function History() {
                   {expandedOrderId === order.id && (
                     <tr className="bg-gray-50 border-b border-gray-200">
                       <td colSpan="5" className="px-6 py-6">
-                        <div className="max-w-3xl flex justify-between items-start">
-                          <div className="flex-1 pr-8">
+                        <div className="max-w-3xl flex flex-col md:flex-row justify-between items-start">
+                          <div className="flex-1 pr-0 md:pr-8 mb-6 md:mb-0 w-full">
                             <h4 className="font-bold text-gray-800 mb-3 text-sm uppercase tracking-widest opacity-80">Order Contents</h4>
                             <ul className="space-y-2">
                               {order.items?.map((item, idx) => (
@@ -204,7 +204,7 @@ export default function History() {
                             )}
                           </div>
                           
-                          <div className="w-56 flex flex-col items-end shrink-0 space-y-3 pt-4 border-l border-gray-200 pl-6">
+                          <div className="w-full md:w-56 flex flex-col items-center md:items-end shrink-0 space-y-3 pt-6 md:pt-4 border-t md:border-t-0 md:border-l border-gray-200 pl-0 md:pl-6">
                             <button 
                               onClick={(e) => { e.stopPropagation(); handlePrint(order); }} 
                               className="text-gray-700 w-full justify-center bg-white border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-colors shadow-sm"

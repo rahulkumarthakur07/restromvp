@@ -78,7 +78,7 @@ export default function Settings() {
           <Store className="w-8 h-8" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">About Open My Restro</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
           <p className="text-gray-500 font-medium">Configure details used in your printable bills and UI.</p>
         </div>
       </div>

@@ -155,13 +155,13 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 overflow-x-auto pb-4">
+      <div className="flex-1 flex overflow-x-auto pb-6 pt-2 gap-6 snap-x snap-mandatory lg:grid lg:grid-cols-4 hide-scrollbar">
         {COLUMNS.map(col => {
           const colOrders = orders.filter(o => o.status === col.id);
           const ColIcon = col.icon;
           
           return (
-            <div key={col.id} className="flex flex-col h-full bg-gray-100/50 rounded-3xl p-4 border border-gray-200/60">
+            <div key={col.id} className="flex flex-col h-[calc(100vh-14rem)] bg-gray-100/50 rounded-3xl p-4 border border-gray-200/60 w-[85vw] shrink-0 snap-center lg:w-auto">
               <div className="flex items-center justify-between mb-4 px-2">
                 <div className="flex items-center space-x-2">
                   <div className={`p-1.5 rounded-lg ${col.bg} ${col.text}`}>
