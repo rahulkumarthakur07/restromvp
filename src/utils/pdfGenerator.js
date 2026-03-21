@@ -66,7 +66,7 @@ export const generatePDFReceipt = async (order, settings) => {
   
   order.items.forEach(item => {
     doc.text(`${item.quantity}x ${item.name}`, 20, y);
-    doc.text(`$${(item.price * item.quantity).toFixed(2)}`, 190, y, { align: 'right' });
+    doc.text(`Rs. ${(item.price * item.quantity).toFixed(2)}`, 190, y, { align: 'right' });
     y += 8;
   });
   
@@ -75,7 +75,7 @@ export const generatePDFReceipt = async (order, settings) => {
   
   doc.setFont(undefined, 'bold');
   doc.text('TOTAL DUE', 20, y);
-  doc.text(`$${order.totalAmount?.toFixed(2) || '0.00'}`, 190, y, { align: 'right' });
+  doc.text(`Rs. ${order.totalAmount?.toFixed(2) || '0.00'}`, 190, y, { align: 'right' });
   y += 20;
 
   doc.setFont(undefined, 'normal');

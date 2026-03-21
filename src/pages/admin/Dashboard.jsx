@@ -78,13 +78,13 @@ export default function Dashboard() {
           ${order.items.map(i => `
             <div class="flex">
               <span>${i.quantity}x ${i.name}</span>
-              <span>$${(i.price * i.quantity).toFixed(2)}</span>
+              <span>Rs. ${(i.price * i.quantity).toFixed(2)}</span>
             </div>
           `).join('')}
           <div class="divider"></div>
           <div class="flex bold">
             <span>TOTAL</span>
-            <span>$${order.totalAmount?.toFixed(2) || '0.00'}</span>
+            <span>Rs. ${order.totalAmount?.toFixed(2) || '0.00'}</span>
           </div>
           <div class="center" style="margin-top: 20px;">
             <div>Thank you for your visit!</div>
@@ -106,7 +106,7 @@ export default function Dashboard() {
   };
 
   const handleShareReceipt = async (order) => {
-    const text = `Receipt for Order #${order.tokenNumber}\nTotal: $${order.totalAmount.toFixed(2)}`;
+    const text = `Receipt for Order #${order.tokenNumber}\nTotal: Rs. ${order.totalAmount.toFixed(2)}`;
     try {
       if (navigator.share) {
         await navigator.share({
@@ -190,7 +190,17 @@ export default function Dashboard() {
                             <span className="text-2xl font-black leading-none">{order.tableId}</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className={`font-black text-xl tracking-tight ${col.text}`}>Queue #{order.tokenNumber}</span>
+                            <div className="flex items-center space-x-2">
+                              {col.id !== 'Served' && col.id !== 'Completed' ? (
+                                <div className={`font-black text-4xl tracking-tighter ${col.text} drop-shadow-sm`}>
+                                  #{orders.filter(o => o.status !== 'Served' && o.status !== 'Completed' && o.id !== order.id && o.timestamp && order.timestamp && o.timestamp.seconds < order.timestamp.seconds).length + 1}
+                                </div>
+                              ) : (
+                                <div className={`font-black text-2xl tracking-tighter ${col.text}`}>
+                                  #{order.tokenNumber}
+                                </div>
+                              )}
+                            </div>
                             <div className="text-xs font-bold text-gray-500 flex items-center mt-1">
                               <Clock className="w-3.5 h-3.5 mr-1 text-gray-400" />
                               {order.timestamp?.toDate ? new Date(order.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now'}
@@ -235,7 +245,7 @@ export default function Dashboard() {
                     {/* Footer Actions */}
                     <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="font-black text-gray-800">${order.totalAmount?.toFixed(2) || '0.00'}</span>
+                        <span className="font-black text-gray-800">Rs. {order.totalAmount?.toFixed(2) || '0.00'}</span>
                         <div className="flex space-x-2">
                           <button 
                             onClick={() => {

@@ -131,7 +131,7 @@ export default function Udhar() {
                   {p.phone && <p className="text-xs text-gray-500">{p.phone}</p>}
                 </div>
                 <div className={`font-black ${p.balance > 0 ? 'text-red-500' : p.balance < 0 ? 'text-green-500' : 'text-gray-400'}`}>
-                  ${Math.abs(p.balance || 0).toFixed(2)}
+                  Rs. {Math.abs(p.balance || 0).toFixed(2)}
                   <span className="text-[10px] block text-right font-medium text-gray-400">
                     {p.balance > 0 ? 'They owe you' : p.balance < 0 ? 'You owe them' : 'Settled'}
                   </span>
@@ -169,7 +169,7 @@ export default function Udhar() {
               <div className="text-right">
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Net Balance</p>
                 <p className={`text-xl font-black ${(selectedPersona.balance||0) > 0 ? 'text-red-600' : (selectedPersona.balance||0) < 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                  ${Math.abs(selectedPersona.balance || 0).toFixed(2)}
+                  Rs. {Math.abs(selectedPersona.balance || 0).toFixed(2)}
                 </p>
               </div>
             </div>
@@ -193,7 +193,7 @@ export default function Udhar() {
                           <span className={`font-black tracking-tight ${isGave ? 'text-red-700' : 'text-green-700'}`}>
                             {isGave ? 'You Gave' : 'You Received'}
                           </span>
-                          <span className="font-black text-lg text-gray-900 ml-auto pl-4">${t.amount.toFixed(2)}</span>
+                          <span className="font-black text-lg text-gray-900 ml-auto pl-4">Rs. {t.amount.toFixed(2)}</span>
                         </div>
                         {t.note && <p className="text-sm text-gray-700 font-medium bg-white/50 p-2 rounded-lg mt-1 border border-black/5 leading-snug">{t.note}</p>}
                         <div className="text-[10px] text-right font-bold text-gray-400 mt-2">
@@ -212,7 +212,7 @@ export default function Udhar() {
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
                   <div className="relative w-32 shrink-0">
-                    <span className="absolute left-3 top-2.5 font-black text-gray-400">$</span>
+                    <span className="absolute left-3 top-2.5 font-black text-gray-400">Rs.</span>
                     <input 
                       type="number" 
                       placeholder="0.00" 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, QrCode } from 'lucide-react';
+import { encryptTableId } from '../../utils/crypto';
 
 export default function Tables() {
   const [tableCount, setTableCount] = useState(5);
@@ -49,7 +50,7 @@ export default function Tables() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {Array.from({ length: tableCount }).map((_, i) => {
           const tableId = i + 1;
-          const tableUrl = `${baseUrl}/table/${tableId}`;
+          const tableUrl = `${baseUrl}/table/${encryptTableId(tableId)}`;
           const hexColor = getTableColor(tableId);
           
           return (

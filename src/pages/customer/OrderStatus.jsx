@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, collection, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useOrder } from '../../context/OrderContext';
 import { Loader2, CheckCircle2, Clock, ChefHat, ArrowLeft, UtensilsCrossed, ReceiptText, Download, X, Sun, Moon } from 'lucide-react';
 import { generatePDFReceipt } from '../../utils/pdfGenerator';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import LoaderScreen from '../../components/LoaderScreen';
+import { decryptTableId } from '../../utils/crypto';
 
 export default function OrderStatus() {
-  const { tableId } = useParams();
+  const { tableId: urlTableId } = useParams();
+  const tableId = decryptTableId(urlTableId);
   const navigate = useNavigate();
   const { activeOrders } = useOrder();
   
   const [liveOrders, setLiveOrders] = useState({});
+  const [ordersAheadMap, setOrdersAheadMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({});
   const [dismissedBills, setDismissedBills] = useState(() => JSON.parse(localStorage.getItem('resmvp_dismissed_bills') || '[]'));
@@ -68,6 +71,34 @@ export default function OrderStatus() {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [activeOrders]);
 
+  // Track dynamic queue of orders ahead
+  useEffect(() => {
+    if (Object.keys(liveOrders).length === 0) return;
+
+    const q = query(collection(db, 'orders'), where('status', 'in', ['Pending', 'Preparing', 'Ready']));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const activeAll = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+      
+      const newMap = {};
+      Object.keys(liveOrders).forEach(myOrderId => {
+        const myOrder = liveOrders[myOrderId];
+        if (myOrder.status === 'Served' || myOrder.status === 'Completed') {
+          newMap[myOrderId] = 0;
+        } else {
+          const countAhead = activeAll.filter(o => 
+            o.id !== myOrderId && 
+            o.timestamp && myOrder.timestamp && 
+            o.timestamp.seconds < myOrder.timestamp.seconds
+          ).length;
+          newMap[myOrderId] = countAhead;
+        }
+      });
+      setOrdersAheadMap(newMap);
+    });
+
+    return () => unsub();
+  }, [liveOrders]);
+
   const handleDownloadReceipt = async (order) => {
     await generatePDFReceipt(order, settings);
   };
@@ -82,7 +113,7 @@ export default function OrderStatus() {
         <h2 className="text-2xl font-bold text-gray-800 mb-2">No Active Orders</h2>
         <p className="text-gray-500 mb-6">You haven't placed any orders yet.</p>
         <button 
-          onClick={() => navigate(`/table/${tableId}`)}
+          onClick={() => navigate(`/table/${urlTableId}`)}
           className="bg-blue-600 font-black text-white px-8 py-4 rounded-xl shadow-lg border-2 border-transparent hover:bg-blue-700 transition-colors"
         >
           Browse Menu
@@ -114,7 +145,7 @@ export default function OrderStatus() {
     <div className="min-h-screen bg-gray-50 pb-24">
       <header className="bg-white px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
         <div className="flex items-center space-x-3">
-          <button onClick={() => navigate(`/table/${tableId}`)} className="p-2 -ml-2 hover:bg-gray-50 rounded-full text-gray-700">
+          <button onClick={() => navigate(`/table/${urlTableId}`)} className="p-2 -ml-2 hover:bg-gray-50 rounded-full text-gray-700">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="text-xl font-bold text-gray-800">Your Orders</h1>
@@ -146,9 +177,22 @@ export default function OrderStatus() {
                 </div>
                 <div>
                   <h2 className={`text-xl font-bold ${currentStatus.color}`}>{currentStatus.text}</h2>
-                  <div className="bg-white/80 backdrop-blur inline-flex px-3 py-1 rounded-lg mt-2 font-mono font-bold text-sm border border-black/5 items-center justify-center shadow-sm">
-                    Queue #{order.tokenNumber}
-                  </div>
+                  
+                  {ordersAheadMap[order.id] !== undefined && !['Served', 'Completed'].includes(order.status) ? (
+                    <div className="mt-4 flex flex-col items-center">
+                      <span className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Your Place in Line</span>
+                      <div className="bg-gray-900 text-white dark:bg-white dark:text-gray-900 inline-flex px-6 py-2 rounded-2xl font-black text-5xl tracking-tighter shadow-lg transform transition-transform scale-105">
+                        #{ordersAheadMap[order.id] + 1}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 flex flex-col items-center">
+                      <span className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Order Number</span>
+                      <div className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 inline-flex px-5 py-2 rounded-xl font-black text-2xl tracking-tighter shadow-sm">
+                        #{order.tokenNumber}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -168,7 +212,7 @@ export default function OrderStatus() {
                         </span>
                         <span className="font-medium">{item.name}</span>
                       </div>
-                      <span className="font-bold shrink-0">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-bold shrink-0">Rs. {(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -179,7 +223,7 @@ export default function OrderStatus() {
                       {order.paid ? 'PAID' : 'UNPAID'}
                     </span>
                   </div>
-                  <span>${order.totalAmount.toFixed(2)}</span>
+                  <span>Rs. {order.totalAmount.toFixed(2)}</span>
                 </div>
 
                 {(order.status === 'Served' || order.status === 'Completed') && (
@@ -197,7 +241,7 @@ export default function OrderStatus() {
         })}
         
         <button 
-          onClick={() => navigate(`/table/${tableId}`)}
+          onClick={() => navigate(`/table/${urlTableId}`)}
           className="w-full bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold py-4 rounded-xl transition-colors shadow-sm mt-4"
         >
           + Add More Items (New Order)
@@ -241,14 +285,14 @@ export default function OrderStatus() {
                 {activeModalOrder.items.map((i, idx) => (
                   <div key={idx} className="flex justify-between text-sm">
                     <span className="font-medium text-gray-800">{i.quantity}x {i.name}</span>
-                    <span className="font-bold text-gray-600">${(i.price * i.quantity).toFixed(2)}</span>
+                    <span className="font-bold text-gray-600">Rs. {(i.price * i.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
 
               <div className="flex justify-between items-center pt-4 border-t-2 border-dashed border-gray-200 text-lg">
                 <span className="font-black text-gray-900">Total Due</span>
-                <span className="font-black text-gray-900">${activeModalOrder.totalAmount.toFixed(2)}</span>
+                <span className="font-black text-gray-900">Rs. {activeModalOrder.totalAmount.toFixed(2)}</span>
               </div>
             </div>
 

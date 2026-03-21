@@ -7,14 +7,17 @@ import { ShoppingCart, Plus, Minus, Search, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import LoaderScreen from '../../components/LoaderScreen';
+import { decryptTableId } from '../../utils/crypto';
 
 export default function Menu() {
-  const { tableId } = useParams();
+  const { tableId: urlTableId } = useParams();
+  const tableId = decryptTableId(urlTableId);
   const navigate = useNavigate();
   const { cart, addToCart, removeFromCart, updateQuantity, activeOrders, liveOrderStatuses } = useOrder();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState('default');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [settings, setSettings] = useState({});
   const [showSplash, setShowSplash] = useState(true);
@@ -68,6 +71,10 @@ export default function Menu() {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
     return matchesSearch && matchesCategory;
+  }).sort((a,b) => {
+    if (sortOrder === 'low') return Number(a.price) - Number(b.price);
+    if (sortOrder === 'high') return Number(b.price) - Number(a.price);
+    return 0;
   });
 
   if (loading) {
@@ -136,7 +143,7 @@ export default function Menu() {
             </button>
             {activeOrders && activeOrders.length > 0 && (
               <button 
-                onClick={() => navigate(`/table/${tableId}/status`)}
+                onClick={() => navigate(`/table/${urlTableId}/status`)}
                 className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold shadow-sm border border-blue-100 flex items-center transition-colors"
               >
                 Your Orders {Object.values(liveOrderStatuses).filter(o => o.status !== 'Served').length > 0 ? `(${Object.values(liveOrderStatuses).filter(o => o.status !== 'Served').length})` : ''}
@@ -145,18 +152,29 @@ export default function Menu() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative mb-3">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="w-5 h-5 text-gray-400" />
+        {/* Search & Sort Bar */}
+        <div className="relative mb-3 flex space-x-2">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="w-5 h-5 text-gray-400" />
+            </div>
+            <input
+              type="search"
+              placeholder="Search our menu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm font-medium"
+            />
           </div>
-          <input
-            type="search"
-            placeholder="Search our menu..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm font-medium"
-          />
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-gray-700 bg-white"
+          >
+            <option value="default">Sort by</option>
+            <option value="low">Price: Low to High</option>
+            <option value="high">Price: High to Low</option>
+          </select>
         </div>
 
         {/* Categories Horizontal Scroll */}
@@ -208,7 +226,7 @@ export default function Menu() {
                     <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
                       <div>
                         <h3 className="text-base sm:text-lg font-bold text-gray-800 leading-tight mb-1">{product.name}</h3>
-                        <p className="text-blue-600 font-black mb-3">${Number(product.price).toFixed(2)}</p>
+                        <p className="text-blue-600 font-black mb-3">Rs. {Number(product.price).toFixed(2)}</p>
                       </div>
                       
                       <div className="mt-auto">
@@ -254,7 +272,7 @@ export default function Menu() {
           className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm"
         >
           <button 
-            onClick={() => navigate(`/table/${tableId}/cart`)}
+            onClick={() => navigate(`/table/${urlTableId}/cart`)}
             className="w-full bg-gray-900 text-white shadow-xl rounded-2xl py-4 px-6 flex items-center justify-between hover:bg-gray-800 transition-colors"
           >
             <div className="flex items-center space-x-3">
@@ -267,7 +285,7 @@ export default function Menu() {
               <span className="font-semibold">View Cart</span>
             </div>
             <span className="font-bold">
-              ${cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}
+              Rs. {cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}
             </span>
           </button>
         </motion.div>

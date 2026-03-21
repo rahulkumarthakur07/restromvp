@@ -69,13 +69,13 @@ export default function History() {
           ${order.items.map(i => `
             <div class="flex">
               <span>${i.quantity}x ${i.name}</span>
-              <span>$${(i.price * i.quantity).toFixed(2)}</span>
+              <span>Rs. ${(i.price * i.quantity).toFixed(2)}</span>
             </div>
           `).join('')}
           <div class="divider"></div>
           <div class="flex bold">
             <span>TOTAL</span>
-            <span>$${order.totalAmount?.toFixed(2) || '0.00'}</span>
+            <span>Rs. ${order.totalAmount?.toFixed(2) || '0.00'}</span>
           </div>
           <div class="center" style="margin-top: 20px;">
             <div>Thank you for your visit!</div>
@@ -173,7 +173,7 @@ export default function History() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                       <div className="flex flex-col items-end">
-                        <span className="font-bold text-gray-900">${order.totalAmount?.toFixed(2)}</span>
+                        <span className="font-bold text-gray-900">Rs. {order.totalAmount?.toFixed(2)}</span>
                         <span className={`text-xs font-bold ${order.paid ? 'text-green-600' : 'text-red-500'}`}>
                           {order.paid ? 'PAID' : 'UNPAID'}
                         </span>
@@ -191,7 +191,7 @@ export default function History() {
                               {order.items?.map((item, idx) => (
                                  <li key={idx} className="flex justify-between items-center text-sm font-medium text-gray-700 bg-white px-4 py-2 rounded-lg border border-gray-100">
                                    <span>{item.quantity}x {item.name}</span>
-                                   <span>${(item.price * item.quantity).toFixed(2)}</span>
+                                   <span>Rs. {(item.price * item.quantity).toFixed(2)}</span>
                                  </li>
                               ))}
                             </ul>

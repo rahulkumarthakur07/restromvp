@@ -5,9 +5,11 @@ import { db } from '../../firebase';
 import { useOrder } from '../../context/OrderContext';
 import { ArrowLeft, Trash2, Plus, Minus, Loader2, ShoppingCart } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { decryptTableId } from '../../utils/crypto';
 
 export default function Cart() {
-  const { tableId } = useParams();
+  const { tableId: urlTableId } = useParams();
+  const tableId = decryptTableId(urlTableId);
   const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, clearCart, addActiveOrder } = useOrder();
   const [isOrdering, setIsOrdering] = useState(false);
@@ -27,9 +29,17 @@ export default function Cart() {
       // Get today's queue number
       const startOfDay = new Date();
       startOfDay.setHours(0,0,0,0);
+      // Query for all orders today to find the max token number
       const q = query(collection(db, 'orders'), where('timestamp', '>=', startOfDay));
-      const countSnap = await getCountFromServer(q);
-      const tokenNumber = countSnap.data().count + 1;
+      const qSnapshot = await getDocs(q);
+      
+      let maxToken = 0;
+      qSnapshot.forEach(docSnap => {
+        const t = docSnap.data().tokenNumber || 0;
+        if (t > maxToken) maxToken = t;
+      });
+
+      const tokenNumber = maxToken + 1;
       
       const orderData = {
         tableId,
@@ -59,7 +69,7 @@ export default function Cart() {
       });
 
       clearCart();
-      navigate(`/table/${tableId}/status`);
+      navigate(`/table/${urlTableId}/status`);
       
     } catch (error) {
       console.error("Error placing order:", error);
@@ -79,7 +89,7 @@ export default function Cart() {
           <h2 className="text-xl font-bold text-gray-800 mb-2">Your cart is empty</h2>
           <p className="text-gray-500 mb-6">Looks like you haven't added any items yet.</p>
           <button 
-            onClick={() => navigate(`/table/${tableId}`)}
+            onClick={() => navigate(`/table/${urlTableId}`)}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-colors"
           >
             Browse Menu
@@ -113,7 +123,7 @@ export default function Cart() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-800">{item.name}</h3>
-                  <p className="text-gray-500 text-sm font-medium">${Number(item.price).toFixed(2)}</p>
+                  <p className="text-gray-500 text-sm font-medium">Rs. {Number(item.price).toFixed(2)}</p>
                 </div>
               </div>
               
@@ -148,15 +158,15 @@ export default function Cart() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
           <div className="flex justify-between text-gray-600">
             <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>Rs. {subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-gray-600">
             <span>Tax (10%)</span>
-            <span>${tax.toFixed(2)}</span>
+            <span>Rs. {tax.toFixed(2)}</span>
           </div>
           <div className="pt-3 border-t border-gray-100 flex justify-between items-center bg-gray-50 -mx-4 -mb-4 p-4 rounded-b-2xl mt-2">
             <span className="font-bold text-gray-800 text-lg">Total</span>
-            <span className="font-bold text-gray-800 text-xl">${total.toFixed(2)}</span>
+            <span className="font-bold text-gray-800 text-xl">Rs. {total.toFixed(2)}</span>
           </div>
         </div>
 
@@ -207,7 +217,7 @@ export default function Cart() {
                 <span>Placing Order...</span>
               </>
             ) : (
-              <span>Place Order - ${total.toFixed(2)}</span>
+              <span>Place Order - Rs. {total.toFixed(2)}</span>
             )}
           </button>
         </div>

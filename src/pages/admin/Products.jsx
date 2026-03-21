@@ -202,7 +202,7 @@ export default function Products() {
               />
             </div>
             <div className="w-full md:w-32 space-y-1">
-              <label className="text-sm font-medium text-gray-700">Price ($) *</label>
+              <label className="text-sm font-medium text-gray-700">Price (Rs.) *</label>
               <input 
                 type="number" step="0.01" required
                 value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})}
@@ -317,7 +317,7 @@ export default function Products() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${Number(product.price).toFixed(2)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Rs. {Number(product.price).toFixed(2)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     <button onClick={() => handleEditProduct(product)} className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-full transition-colors">
                       <Edit2 className="w-5 h-5" />
