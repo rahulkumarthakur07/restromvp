@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2 } from 'lucide-react';
+import { generatePDFReceipt } from '../../utils/pdfGenerator';
 
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
@@ -100,17 +101,7 @@ export default function Dashboard() {
   };
 
   const handleDownloadReceipt = (order) => {
-    let content = `--- RECEIPT ---\nOrder #${order.tokenNumber}\nTable ${order.tableId}\n`;
-    order.items.forEach(i => content += `${i.quantity}x ${i.name} - $${(i.price*i.quantity).toFixed(2)}\n`);
-    content += `\nTOTAL: $${order.totalAmount.toFixed(2)}`;
-    
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Receipt_${order.tokenNumber}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    generatePDFReceipt(order, settings);
   };
 
   const handleShareReceipt = async (order) => {
@@ -131,13 +122,18 @@ export default function Dashboard() {
     return <div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
   }
 
-  // Active orders are any that aren't explicitly archived. For this MVP, we just show all of today's or all fetched.
   const COLUMNS = [
     { id: 'Pending', label: 'New Orders', icon: Clock, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
     { id: 'Preparing', label: 'In Kitchen', icon: ChefHat, bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
     { id: 'Ready', label: 'Ready to Serve', icon: CheckCircle2, bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
     { id: 'Served', label: 'Served', icon: UtensilsCrossed, bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
   ];
+
+  const TABLE_COLORS = [
+    '#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', 
+    '#EC4899', '#06B6D4', '#F97316', '#6366F1', '#14B8A6'
+  ];
+  const getTableColor = (id) => TABLE_COLORS[(id - 1) % TABLE_COLORS.length] || '#1f2937';
 
   return (
     <div className="h-full flex flex-col space-y-6">
@@ -185,12 +181,15 @@ export default function Dashboard() {
                     <div className={`p-4 flex flex-col gap-3 border-b ${col.border} ${col.bg}`}>
                       <div className="flex justify-between items-start">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-sm border ${col.border} bg-white shrink-0`}>
-                            <span className="text-[10px] font-black uppercase text-gray-400 leading-none mb-0.5">Table</span>
-                            <span className={`text-2xl font-black leading-none ${col.text}`}>{order.tableId}</span>
+                          <div 
+                            className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-sm text-white shrink-0"
+                            style={{ backgroundColor: getTableColor(order.tableId) }}
+                          >
+                            <span className="text-[10px] font-black uppercase leading-none mb-0.5 opacity-90">Table</span>
+                            <span className="text-2xl font-black leading-none">{order.tableId}</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className={`font-black text-xl tracking-tight ${col.text}`}>#{order.tokenNumber}</span>
+                            <span className={`font-black text-xl tracking-tight ${col.text}`}>Queue #{order.tokenNumber}</span>
                             <div className="text-xs font-bold text-gray-500 flex items-center mt-1">
                               <Clock className="w-3.5 h-3.5 mr-1 text-gray-400" />
                               {order.timestamp?.toDate ? new Date(order.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now'}

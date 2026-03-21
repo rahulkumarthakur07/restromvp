@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, where, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useOrder } from '../../context/OrderContext';
-import { ArrowLeft, Trash2, Plus, Minus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, Minus, Loader2, ShoppingCart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Cart() {
@@ -24,8 +24,12 @@ export default function Cart() {
     setIsOrdering(true);
     
     try {
-      // Generate a random 4-digit token
-      const tokenNumber = Math.floor(1000 + Math.random() * 9000);
+      // Get today's queue number
+      const startOfDay = new Date();
+      startOfDay.setHours(0,0,0,0);
+      const q = query(collection(db, 'orders'), where('timestamp', '>=', startOfDay));
+      const countSnap = await getCountFromServer(q);
+      const tokenNumber = countSnap.data().count + 1;
       
       const orderData = {
         tableId,

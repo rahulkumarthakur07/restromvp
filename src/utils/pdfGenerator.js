@@ -1,0 +1,66 @@
+import { jsPDF } from 'jspdf';
+
+export const generatePDFReceipt = (order, settings) => {
+  const doc = new jsPDF();
+  let y = 20;
+  
+  doc.setFontSize(22);
+  doc.text(settings?.name || 'Restaurant', 105, y, { align: 'center' });
+  y += 10;
+  
+  doc.setFontSize(12);
+  if (settings?.address) {
+    doc.text(settings.address.replace(/\n/g, ', '), 105, y, { align: 'center' });
+    y += 8;
+  }
+  if (settings?.pan) {
+    doc.text(`PAN: ${settings.pan}`, 105, y, { align: 'center' });
+    y += 10;
+  }
+  
+  doc.line(20, y, 190, y);
+  y += 10;
+  
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text('RECEIPT', 105, y, { align: 'center' });
+  y += 10;
+  
+  doc.setFontSize(12);
+  doc.setFont(undefined, 'normal');
+  doc.text(`Queue #${order.tokenNumber} | Table ${order.tableId}`, 20, y);
+  doc.text(new Date().toLocaleDateString(), 190, y, { align: 'right' });
+  y += 10;
+  
+  if (order.customerName) {
+    doc.text(`Customer: ${order.customerName}`, 20, y);
+    y += 8;
+  }
+  if (order.customerPhone) {
+    doc.text(`Phone: ${order.customerPhone}`, 20, y);
+    y += 8;
+  }
+  
+  doc.line(20, y, 190, y);
+  y += 10;
+  
+  order.items.forEach(item => {
+    doc.text(`${item.quantity}x ${item.name}`, 20, y);
+    doc.text(`$${(item.price * item.quantity).toFixed(2)}`, 190, y, { align: 'right' });
+    y += 8;
+  });
+  
+  doc.line(20, y, 190, y);
+  y += 10;
+  
+  doc.setFont(undefined, 'bold');
+  doc.text('TOTAL DUE', 20, y);
+  doc.text(`$${order.totalAmount?.toFixed(2) || '0.00'}`, 190, y, { align: 'right' });
+  y += 20;
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.text('Thank you for your visit!', 105, y, { align: 'center' });
+  
+  doc.save(`Receipt_${order.tokenNumber}.pdf`);
+};

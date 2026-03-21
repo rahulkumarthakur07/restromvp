@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { History as HistoryIcon, Clock, User, DollarSign, Trash2, ChevronDown, ChevronUp, Printer } from 'lucide-react';
+import { History as HistoryIcon, Clock, User, DollarSign, Trash2, ChevronDown, ChevronUp, Printer, Download } from 'lucide-react';
+import { generatePDFReceipt } from '../../utils/pdfGenerator';
 
 export default function History() {
   const [orders, setOrders] = useState([]);
@@ -203,7 +204,7 @@ export default function History() {
                             )}
                           </div>
                           
-                          <div className="w-48 flex flex-col items-end shrink-0 space-y-4 pt-4 border-l border-gray-200 pl-6">
+                          <div className="w-56 flex flex-col items-end shrink-0 space-y-3 pt-4 border-l border-gray-200 pl-6">
                             <button 
                               onClick={(e) => { e.stopPropagation(); handlePrint(order); }} 
                               className="text-gray-700 w-full justify-center bg-white border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-colors shadow-sm"
@@ -211,8 +212,14 @@ export default function History() {
                               <Printer className="w-4 h-4 mr-2"/> Print Receipt
                             </button>
                             <button 
+                              onClick={(e) => { e.stopPropagation(); generatePDFReceipt(order, settings); }} 
+                              className="text-blue-600 w-full justify-center bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-colors shadow-sm"
+                            >
+                              <Download className="w-4 h-4 mr-2"/> Download PDF
+                            </button>
+                            <button 
                               onClick={(e) => { e.stopPropagation(); handleDeleteOrder(order.id); }} 
-                              className="text-red-600 w-full justify-center bg-red-white border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-colors shadow-sm"
+                              className="text-red-600 w-full justify-center bg-red-white border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-colors shadow-sm mt-4"
                             >
                               <Trash2 className="w-4 h-4 mr-2"/> Delete Order
                             </button>
