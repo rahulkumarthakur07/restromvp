@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, QrCode, LogOut, BarChart3, History, Wallet, Settings } from 'lucide-react';
+import { LayoutDashboard, Package, QrCode, LogOut, BarChart3, History, Wallet, Settings, Sun, Moon } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 export default function AdminLayout() {
   const isAuthenticated = localStorage.getItem('resmvp_admin_auth') === 'true';
   const location = useLocation();
   const [settings, setSettings] = useState({});
+  const { isDark, toggleDarkMode } = useDarkMode();
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -66,7 +68,14 @@ export default function AdminLayout() {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 space-y-2">
+          <button 
+            onClick={toggleDarkMode}
+            className="flex items-center space-x-3 text-gray-600 hover:bg-gray-50 w-full px-4 py-3 rounded-xl transition-colors"
+          >
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
           <button 
             onClick={handleLogout}
             className="flex items-center space-x-3 text-red-600 hover:bg-red-50 w-full px-4 py-3 rounded-xl transition-colors"
@@ -85,9 +94,14 @@ export default function AdminLayout() {
             {settings.logo && <img src={settings.logo} className="w-8 h-8 object-contain rounded-md shadow-sm border border-gray-100 shrink-0" alt="Logo"/>}
             <h2 className="text-lg font-black text-gray-800 tracking-tight">{settings.name || 'Admin'}</h2>
           </div>
-          <button onClick={handleLogout} className="text-red-600 p-2">
-            <LogOut className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button onClick={toggleDarkMode} className="text-gray-600 hover:bg-gray-100 p-2 rounded-lg">
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <button onClick={handleLogout} className="text-red-600 p-2 hover:bg-red-50 rounded-lg">
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
         {/* Mobile Nav (Bottom) */}

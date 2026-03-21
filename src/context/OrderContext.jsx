@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const OrderContext = createContext();
 
@@ -7,6 +9,7 @@ export const useOrder = () => useContext(OrderContext);
 export const OrderProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [activeOrders, setActiveOrders] = useState([]);
+  const [liveOrderStatuses, setLiveOrderStatuses] = useState({});
   
   // Load from local storage on mount (optional for MVP but good for UX)
   useEffect(() => {
@@ -27,6 +30,32 @@ export const OrderProvider = ({ children }) => {
     } else {
       localStorage.removeItem('resmvp_orders');
     }
+  }, [activeOrders]);
+
+  // Global listener to auto-remove orders that are marked as Completed (Archived)
+  // and keep a synchronized map of their details.
+  useEffect(() => {
+    if (activeOrders.length === 0) return;
+    
+    const unsubscribes = activeOrders.map(order => 
+      onSnapshot(doc(db, 'orders', order.id), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.status === 'Completed') {
+            setActiveOrders(prev => prev.filter(o => o.id !== order.id));
+            setLiveOrderStatuses(prev => {
+              const newDict = { ...prev };
+              delete newDict[order.id];
+              return newDict;
+            });
+          } else {
+            setLiveOrderStatuses(prev => ({ ...prev, [order.id]: data }));
+          }
+        }
+      })
+    );
+    
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [activeOrders]);
 
   const addActiveOrder = (order) => {
@@ -73,7 +102,8 @@ export const OrderProvider = ({ children }) => {
       activeOrders,
       setActiveOrders,
       addActiveOrder,
-      removeActiveOrder
+      removeActiveOrder,
+      liveOrderStatuses
     }}>
       {children}
     </OrderContext.Provider>

@@ -2,6 +2,143 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased font-sans;
+    @apply bg-gray-50 text-gray-900 antialiased font-sans transition-colors duration-200;
   }
 }
+
+/* Global Dark Mode Overrides (Pure CSS) */
+html.dark body {
+  background-color: #030712 !important; /* gray-950 */
+  color: #f9fafb !important; /* gray-50 */
+}
+
+html.dark .bg-white {
+  background-color: #111827 !important; /* gray-900 */
+  border-color: #1f2937 !important; /* border-gray-800 */
+}
+
+html.dark .bg-gray-50 {
+  background-color: #030712 !important; /* gray-950 */
+}
+
+/* Text Colors */
+html.dark .text-gray-900, html.dark .text-gray-800, html.dark .text-gray-700 {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .text-gray-600, html.dark .text-gray-500, html.dark .text-gray-400 {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Borders */
+html.dark .border-gray-100, html.dark .border-gray-200, html.dark .border-gray-300 {
+  border-color: #1f2937 !important; /* border-gray-800 */
+}
+
+/* Disable Shadows globally in Dark Mode for a cleaner flat aesthetic */
+html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl {
+  box-shadow: none !important;
+}
+
+/* Buttons and interactive */
+html.dark .hover\:bg-gray-50:hover {
+  background-color: #1f2937 !important; /* gray-800 */
+}
+html.dark .hover\:bg-gray-100:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .bg-gray-100 {
+  background-color: #1f2937 !important; /* gray-800 */
+  color: #e5e7eb !important; /* gray-200 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Main dark buttons (usually bg-gray-900) to blue in dark mode */
+html.dark .bg-gray-900 {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+html.dark .hover\:bg-black:hover, html.dark .hover\:bg-gray-800:hover {
+  background-color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* Overlays (Modals) */
+html.dark .bg-gray-900\/60 {
+  background-color: rgba(3, 7, 18, 0.85) !important; /* very dark blur */
+}
+html.dark .bg-white\/80 { background-color: rgba(17, 24, 39, 0.8) !important; }
+
+/* Dashboard Table Pastel Tags Color Fixes */
+html.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.15) !important; border-color: rgba(239, 68, 68, 0.3) !important; color: #fca5a5 !important; }
+html.dark .text-red-800 { color: #fca5a5 !important; }
+html.dark .border-red-200 { border-color: rgba(239, 68, 68, 0.3) !important; }
+
+html.dark .bg-orange-100 { background-color: rgba(249, 115, 22, 0.15) !important; border-color: rgba(249, 115, 22, 0.3) !important; color: #fdba74 !important; }
+html.dark .text-orange-800 { color: #fdba74 !important; }
+html.dark .border-orange-200 { border-color: rgba(249, 115, 22, 0.3) !important; }
+
+html.dark .bg-lime-100 { background-color: rgba(132, 204, 22, 0.15) !important; border-color: rgba(132, 204, 22, 0.3) !important; color: #bef264 !important; }
+html.dark .text-lime-800 { color: #bef264 !important; }
+html.dark .border-lime-200 { border-color: rgba(132, 204, 22, 0.3) !important; }
+
+html.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.15) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #6ee7b7 !important; }
+html.dark .text-emerald-800 { color: #6ee7b7 !important; }
+html.dark .border-emerald-200 { border-color: rgba(16, 185, 129, 0.3) !important; }
+
+html.dark .bg-cyan-100 { background-color: rgba(6, 182, 212, 0.15) !important; border-color: rgba(6, 182, 212, 0.3) !important; color: #67e8f9 !important; }
+html.dark .text-cyan-800 { color: #67e8f9 !important; }
+html.dark .border-cyan-200 { border-color: rgba(6, 182, 212, 0.3) !important; }
+
+html.dark .bg-violet-100 { background-color: rgba(139, 92, 246, 0.15) !important; border-color: rgba(139, 92, 246, 0.3) !important; color: #c4b5fd !important; }
+html.dark .text-violet-800 { color: #c4b5fd !important; }
+html.dark .border-violet-200 { border-color: rgba(139, 92, 246, 0.3) !important; }
+
+html.dark .bg-fuchsia-100 { background-color: rgba(217, 70, 239, 0.15) !important; border-color: rgba(217, 70, 239, 0.3) !important; color: #f0abfc !important; }
+html.dark .text-fuchsia-800 { color: #f0abfc !important; }
+html.dark .border-fuchsia-200 { border-color: rgba(217, 70, 239, 0.3) !important; }
+
+html.dark .bg-rose-100 { background-color: rgba(244, 63, 94, 0.15) !important; border-color: rgba(244, 63, 94, 0.3) !important; color: #fda4af !important; }
+html.dark .text-rose-800 { color: #fda4af !important; }
+html.dark .border-rose-200 { border-color: rgba(244, 63, 94, 0.3) !important; }
+
+/* Order Status Pastel Tones Fix */
+html.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.1) !important; border-color: rgba(245, 158, 11, 0.2) !important; }
+html.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; border-color: rgba(59, 130, 246, 0.2) !important; }
+html.dark .bg-green-50 { background-color: rgba(34, 197, 94, 0.1) !important; border-color: rgba(34, 197, 94, 0.2) !important; }
+html.dark .bg-purple-50 { background-color: rgba(168, 85, 247, 0.1) !important; border-color: rgba(168, 85, 247, 0.2) !important; }
+
+html.dark .border-amber-200 { border-color: rgba(245, 158, 11, 0.2) !important; }
+html.dark .border-blue-200 { border-color: rgba(59, 130, 246, 0.2) !important; }
+html.dark .border-green-200 { border-color: rgba(34, 197, 94, 0.2) !important; }
+html.dark .border-purple-200 { border-color: rgba(168, 85, 247, 0.2) !important; }
+
+html.dark .text-amber-500 { color: #fcd34d !important; } 
+html.dark .text-blue-500 { color: #93c5fd !important; } 
+html.dark .text-green-500 { color: #86efac !important; } 
+html.dark .text-purple-500 { color: #d8b4fe !important; }
+
+/* Dashboard Column Background & Glass Sections */
+html.dark .bg-gray-50\/50,
+html.dark .bg-gray-100\/50 {
+  background-color: rgba(17, 24, 39, 0.4) !important; /* gray-900 with 40% opacity */
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .bg-white\/70 {
+  background-color: rgba(31, 41, 55, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .border-gray-200\/60 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Loader Screen Background */
+html.dark .bg-gray-50\/90 {
+  background-color: rgba(3, 7, 18, 0.95) !important; /* gray-950 with 95% opacity */
+}
+
+
+

@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useOrder } from '../../context/OrderContext';
-import { Loader2, CheckCircle2, Clock, ChefHat, ArrowLeft, UtensilsCrossed, ReceiptText, Download, X } from 'lucide-react';
+import { Loader2, CheckCircle2, Clock, ChefHat, ArrowLeft, UtensilsCrossed, ReceiptText, Download, X, Sun, Moon } from 'lucide-react';
 import { generatePDFReceipt } from '../../utils/pdfGenerator';
+import { useDarkMode } from '../../hooks/useDarkMode';
+import LoaderScreen from '../../components/LoaderScreen';
 
 export default function OrderStatus() {
   const { tableId } = useParams();
@@ -15,6 +17,7 @@ export default function OrderStatus() {
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({});
   const [dismissedBills, setDismissedBills] = useState(() => JSON.parse(localStorage.getItem('resmvp_dismissed_bills') || '[]'));
+  const { isDark, toggleDarkMode } = useDarkMode();
   
   // For manually viewing a bill from the list
   const [viewBillOrder, setViewBillOrder] = useState(null);
@@ -65,17 +68,12 @@ export default function OrderStatus() {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [activeOrders]);
 
-  const handleDownloadReceipt = (order) => {
-    generatePDFReceipt(order, settings);
+  const handleDownloadReceipt = async (order) => {
+    await generatePDFReceipt(order, settings);
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-        <p className="text-gray-500 font-medium">Loading your orders...</p>
-      </div>
-    );
+    return <LoaderScreen message="Loading your orders..." />;
   }
 
   if (Object.keys(liveOrders).length === 0) {
@@ -121,6 +119,9 @@ export default function OrderStatus() {
           </button>
           <h1 className="text-xl font-bold text-gray-800">Your Orders</h1>
         </div>
+        <button onClick={toggleDarkMode} className="text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors">
+          {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
       </header>
 
       <main className="max-w-md mx-auto p-4 space-y-6 mt-4">
@@ -130,6 +131,15 @@ export default function OrderStatus() {
 
           return (
             <div key={order.id} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col mb-6">
+              
+              {/* Admin Message */}
+              {order.adminMessage && (
+                <div className="bg-blue-50 text-blue-800 p-3 px-6 text-sm font-bold border-b border-blue-100 flex items-center space-x-2">
+                  <span className="text-lg">💬</span>
+                  <span>Admin: {order.adminMessage}</span>
+                </div>
+              )}
+
               <div className={`p-6 flex flex-col items-center justify-center text-center space-y-4 border-b ${currentStatus.bg} ${currentStatus.border}`}>
                 <div className={`w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center ${currentStatus.color}`}>
                   <StatusIcon className="w-8 h-8" />
@@ -163,7 +173,12 @@ export default function OrderStatus() {
                   ))}
                 </div>
                 <div className={`mt-4 pt-3 border-t border-gray-100 flex justify-between items-center text-lg font-black text-gray-900 border-b pb-4 mb-4`}>
-                  <span>Total</span>
+                  <div className="flex items-center space-x-2">
+                    <span>Total</span>
+                    <span className={`text-xs ml-2 px-2 py-0.5 rounded-md text-white border ${order.paid ? 'bg-green-500 border-green-600' : 'bg-gray-400 border-gray-500'}`}>
+                      {order.paid ? 'PAID' : 'UNPAID'}
+                    </span>
+                  </div>
                   <span>${order.totalAmount.toFixed(2)}</span>
                 </div>
 

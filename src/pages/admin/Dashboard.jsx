@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2 } from 'lucide-react';
 import { generatePDFReceipt } from '../../utils/pdfGenerator';
+import LoaderScreen from '../../components/LoaderScreen';
 
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
@@ -100,8 +101,8 @@ export default function Dashboard() {
     }, 500);
   };
 
-  const handleDownloadReceipt = (order) => {
-    generatePDFReceipt(order, settings);
+  const handleDownloadReceipt = async (order) => {
+    await generatePDFReceipt(order, settings);
   };
 
   const handleShareReceipt = async (order) => {
@@ -236,6 +237,27 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between">
                         <span className="font-black text-gray-800">${order.totalAmount?.toFixed(2) || '0.00'}</span>
                         <div className="flex space-x-2">
+                          <button 
+                            onClick={() => {
+                              const msg = window.prompt("Enter message for table (blank to clear):", order.adminMessage || "");
+                              if (msg !== null) updateOrderField(order.id, 'adminMessage', msg);
+                            }}
+                            className="p-1.5 rounded-full text-gray-500 hover:text-blue-600 hover:bg-white transition-colors border border-transparent shadow-sm hover:shadow"
+                            title="Message Table"
+                          >
+                            <span className="text-sm leading-none block">💬</span>
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              if (window.confirm("Are you sure you want to completely delete this order?")) {
+                                try { await deleteDoc(doc(db, 'orders', order.id)); } catch (e) { alert("Failed to delete."); }
+                              }
+                            }}
+                            className="p-1.5 rounded-full text-gray-500 hover:text-red-600 hover:bg-white transition-colors border border-transparent shadow-sm hover:shadow"
+                            title="Delete Order"
+                          >
+                            <span className="text-sm leading-none block">🗑️</span>
+                          </button>
                           <button 
                             onClick={() => handlePrint(order)}
                             className="p-1.5 rounded-full text-gray-500 hover:text-blue-600 hover:bg-white transition-colors border border-transparent shadow-sm hover:shadow"

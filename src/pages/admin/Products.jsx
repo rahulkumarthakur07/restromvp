@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Plus, Trash2, Edit2, Package, Search } from 'lucide-react';
+import LoaderScreen from '../../components/LoaderScreen';
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -57,10 +58,10 @@ export default function Products() {
 
   const resetForm = () => {
     setShowAddForm(false);
-    setNewProduct({ name: '', price: '', category: '', image: '' });
+    setNewProduct({ name: '', price: '', category: existingCategories[0] || '', image: '' });
     setImageFile(null);
     setEditingId(null);
-    setIsCreatingNewCategory(false);
+    setIsCreatingNewCategory(existingCategories.length === 0);
   };
 
   const handleAddProduct = async (e) => {
@@ -128,6 +129,12 @@ export default function Products() {
               resetForm();
             } else {
               resetForm();
+              if (existingCategories.length > 0) {
+                setNewProduct(prev => ({...prev, category: existingCategories[0]}));
+                setIsCreatingNewCategory(false);
+              } else {
+                setIsCreatingNewCategory(true);
+              }
               setShowAddForm(true);
             }
           }}
@@ -205,12 +212,45 @@ export default function Products() {
             </div>
             <div className="flex-1 w-full space-y-1">
               <label className="text-sm font-medium text-gray-700">Category</label>
-              <input 
-                type="text"
-                value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="e.g. Snacks"
-              />
+              {!isCreatingNewCategory && existingCategories.length > 0 ? (
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={newProduct.category}
+                    onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  >
+                    {existingCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <button 
+                    type="button" 
+                    onClick={() => { setIsCreatingNewCategory(true); setNewProduct({...newProduct, category: ''}); }}
+                    className="shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-bold transition-colors text-sm"
+                  >
+                    + New
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="text" required
+                    value={newProduct.category} 
+                    onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="e.g. Snacks"
+                  />
+                  {existingCategories.length > 0 && (
+                    <button 
+                      type="button" 
+                      onClick={() => { setIsCreatingNewCategory(false); setNewProduct({...newProduct, category: existingCategories[0]}); }}
+                      className="shrink-0 text-gray-500 hover:text-gray-700 px-3 py-2 text-sm font-bold bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex flex-col md:flex-row gap-4 items-end mt-2">
@@ -242,7 +282,7 @@ export default function Products() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+        <LoaderScreen message="Loading Products..." />
       ) : products.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
           <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />

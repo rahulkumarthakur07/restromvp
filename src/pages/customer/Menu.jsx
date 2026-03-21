@@ -3,19 +3,22 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useOrder } from '../../context/OrderContext';
-import { ShoppingCart, Plus, Minus, Loader, Search } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Search, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDarkMode } from '../../hooks/useDarkMode';
+import LoaderScreen from '../../components/LoaderScreen';
 
 export default function Menu() {
   const { tableId } = useParams();
   const navigate = useNavigate();
-  const { cart, addToCart, removeFromCart, updateQuantity, activeOrders } = useOrder();
+  const { cart, addToCart, removeFromCart, updateQuantity, activeOrders, liveOrderStatuses } = useOrder();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [settings, setSettings] = useState({});
   const [showSplash, setShowSplash] = useState(true);
+  const { isDark, toggleDarkMode } = useDarkMode();
 
   // For MVP without DB data, we use some mock products if DB is empty
   const mockProducts = [
@@ -68,11 +71,7 @@ export default function Menu() {
   });
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Loader className="w-8 h-8 text-blue-500 animate-spin" />
-      </div>
-    );
+    return <LoaderScreen message="Preparing Menu..." />;
   }
 
   return (
@@ -131,14 +130,19 @@ export default function Menu() {
             </div>
           </div>
           
-          {activeOrders && activeOrders.length > 0 && (
-            <button 
-              onClick={() => navigate(`/table/${tableId}/status`)}
-              className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold shadow-sm border border-blue-100 flex items-center transition-colors"
-            >
-              Your Orders ({activeOrders.length})
+          <div className="flex items-center space-x-2">
+            <button onClick={toggleDarkMode} className="text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors">
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-          )}
+            {activeOrders && activeOrders.length > 0 && (
+              <button 
+                onClick={() => navigate(`/table/${tableId}/status`)}
+                className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold shadow-sm border border-blue-100 flex items-center transition-colors"
+              >
+                Your Orders {Object.values(liveOrderStatuses).filter(o => o.status !== 'Served').length > 0 ? `(${Object.values(liveOrderStatuses).filter(o => o.status !== 'Served').length})` : ''}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -193,7 +197,7 @@ export default function Menu() {
                     transition={{ duration: 0.2 }}
                     className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow"
                   >
-                    <div className="aspect-4/3 bg-gray-50 w-full relative group">
+                    <div className="aspect-video bg-gray-50 w-full relative group overflow-hidden">
                       <img src={product.image || `https://placehold.co/400x300?text=${product.name}`} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                       {cartItem && (
                         <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs font-black w-6 h-6 flex items-center justify-center rounded-full border-2 border-white shadow-md">

@@ -1,9 +1,29 @@
 import { jsPDF } from 'jspdf';
 
-export const generatePDFReceipt = (order, settings) => {
+export const generatePDFReceipt = async (order, settings) => {
   const doc = new jsPDF();
   let y = 20;
   
+  // Try to load and add the logo
+  if (settings?.logo) {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.src = settings.logo;
+      await new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Image failed to load'));
+      });
+      // Calculate aspect ratio
+      const imgWidth = 40;
+      const imgHeight = (img.height / img.width) * imgWidth;
+      doc.addImage(img, 'PNG', 85, y, imgWidth, imgHeight);
+      y += imgHeight + 15;
+    } catch (e) {
+      console.warn("Failed to load logo for PDF", e);
+    }
+  }
+
   doc.setFontSize(22);
   doc.text(settings?.name || 'Restaurant', 105, y, { align: 'center' });
   y += 10;
