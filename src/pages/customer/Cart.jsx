@@ -58,6 +58,7 @@ export default function Cart() {
       
       const orderData = {
         tableId,
+        status: 'Pending',
         customerName: customerName.trim() || null,
         customerPhone: customerPhone.trim() || null,
         message: optionalMessage.trim() || null,

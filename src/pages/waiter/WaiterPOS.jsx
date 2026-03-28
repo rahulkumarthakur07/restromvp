@@ -110,7 +110,7 @@ export default function WaiterPOS() {
           />
         </div>
         {/* Category pills */}
-        <div className="overflow-x-auto flex space-x-2 hide-scrollbar pb-1 -mx-4 px-4">
+        <div className="overflow-x-auto flex space-x-2 thin-scrollbar pb-2 -mx-4 px-4">
           {categories.map(cat => (
             <button
               key={cat}
@@ -332,7 +332,7 @@ export default function WaiterPOS() {
             className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 font-medium"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <div className="flex gap-2 overflow-x-auto thin-scrollbar pb-2">
           {categories.map(cat => (
             <button key={cat} onClick={() => setSelectedCategory(cat)}
               className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold transition-all ${

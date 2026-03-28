@@ -73,9 +73,32 @@ export const generatePDFReceipt = async (order, settings) => {
   doc.line(20, y, 190, y);
   y += 10;
   
+  // Breakdown
+  const currency = settings?.currency || 'Rs.';
+  doc.setFont(undefined, 'normal');
+  doc.text('Subtotal', 20, y);
+  doc.text(`${currency} ${(order.subtotal || (order.totalAmount - (order.taxAmount || 0) - (order.serviceChargeAmount || 0))).toFixed(2)}`, 190, y, { align: 'right' });
+  y += 8;
+
+  if (order.serviceChargeAmount > 0) {
+    doc.text(`Service Charge (${settings?.serviceChargeRate || 0}%)`, 20, y);
+    doc.text(`${currency} ${order.serviceChargeAmount.toFixed(2)}`, 190, y, { align: 'right' });
+    y += 8;
+  }
+
+  if (order.taxAmount > 0) {
+    doc.text(`VAT (${settings?.taxRate || 0}%)`, 20, y);
+    doc.text(`${currency} ${order.taxAmount.toFixed(2)}`, 190, y, { align: 'right' });
+    y += 8;
+  }
+
+  doc.line(20, y, 190, y);
+  y += 10;
+
   doc.setFont(undefined, 'bold');
+  doc.setFontSize(14);
   doc.text('TOTAL DUE', 20, y);
-  doc.text(`Rs. ${order.totalAmount?.toFixed(2) || '0.00'}`, 190, y, { align: 'right' });
+  doc.text(`${currency} ${order.totalAmount?.toFixed(2) || '0.00'}`, 190, y, { align: 'right' });
   y += 20;
 
   doc.setFont(undefined, 'normal');

@@ -303,7 +303,26 @@ export default function OrderStatus() {
                     </div>
                   ))}
                 </div>
-                <div className={`mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-lg font-black text-gray-950 dark:text-white border-b pb-4 mb-4`}>
+                <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                  <div className="flex justify-between text-xs font-bold text-gray-400 uppercase">
+                    <span>Subtotal</span>
+                    <span>Rs. {(order.subtotal || (order.totalAmount - (order.taxAmount || 0) - (order.serviceChargeAmount || 0))).toFixed(0)}</span>
+                  </div>
+                  {order.serviceChargeAmount > 0 && (
+                    <div className="flex justify-between text-xs font-bold text-amber-600 uppercase">
+                      <span>Service Charge</span>
+                      <span>Rs. {order.serviceChargeAmount.toFixed(0)}</span>
+                    </div>
+                  )}
+                  {order.taxAmount > 0 && (
+                    <div className="flex justify-between text-xs font-bold text-blue-600 uppercase">
+                      <span>VAT</span>
+                      <span>Rs. {order.taxAmount.toFixed(0)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className={`mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-lg font-black text-gray-950 dark:text-white border-b pb-4 mb-4`}>
                   <div className="flex items-center space-x-2">
                     <span>Total</span>
                     <span className={`text-[10px] ml-2 px-2 py-0.5 rounded-lg text-white font-black border ${order.paid ? 'bg-green-500 border-green-600' : 'bg-amber-500 border-amber-600'}`}>
@@ -384,6 +403,25 @@ export default function OrderStatus() {
                     <span className="font-black text-gray-950 dark:text-white">Rs. {(i.price * i.quantity).toFixed(0)}</span>
                   </div>
                 ))}
+              </div>
+
+              <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-100 dark:border-gray-800 space-y-2">
+                <div className="flex justify-between text-sm font-bold text-gray-400 uppercase">
+                  <span>Subtotal</span>
+                  <span>Rs. {(activeModalOrder.subtotal || (activeModalOrder.totalAmount - (activeModalOrder.taxAmount || 0) - (activeModalOrder.serviceChargeAmount || 0))).toFixed(0)}</span>
+                </div>
+                {activeModalOrder.serviceChargeAmount > 0 && (
+                  <div className="flex justify-between text-sm font-bold text-amber-600 uppercase">
+                    <span>Service Charge</span>
+                    <span>Rs. {activeModalOrder.serviceChargeAmount.toFixed(0)}</span>
+                  </div>
+                )}
+                {activeModalOrder.taxAmount > 0 && (
+                  <div className="flex justify-between text-sm font-bold text-blue-600 uppercase">
+                    <span>VAT</span>
+                    <span>Rs. {activeModalOrder.taxAmount.toFixed(0)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between items-center pt-5 border-t-2 border-dashed border-gray-100 dark:border-gray-800">

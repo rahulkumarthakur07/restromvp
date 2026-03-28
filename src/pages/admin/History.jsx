@@ -229,6 +229,30 @@ export default function OrderHistory() {
                                      <span>{settings.currency || 'Rs.'} {(item.price * item.quantity).toFixed(0)}</span>
                                    </div>
                                 ))}
+
+                                {/* Breakdown Rows */}
+                                <div className="mt-4 pt-4 border-t border-gray-100 space-y-1">
+                                  <div className="flex justify-between text-xs font-bold text-gray-400 uppercase">
+                                    <span>Subtotal</span>
+                                    <span>{settings.currency || 'Rs.'} {(order.subtotal || (order.totalAmount - (order.taxAmount || 0) - (order.serviceChargeAmount || 0))).toFixed(0)}</span>
+                                  </div>
+                                  {order.serviceChargeAmount > 0 && (
+                                    <div className="flex justify-between text-xs font-bold text-amber-600 uppercase">
+                                      <span>Service Charge ({settings.serviceChargeRate}%)</span>
+                                      <span>{settings.currency || 'Rs.'} {order.serviceChargeAmount.toFixed(0)}</span>
+                                    </div>
+                                  )}
+                                  {order.taxAmount > 0 && (
+                                    <div className="flex justify-between text-xs font-bold text-blue-600 uppercase">
+                                      <span>VAT ({settings.taxRate}%)</span>
+                                      <span>{settings.currency || 'Rs.'} {order.taxAmount.toFixed(0)}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between text-lg font-black text-gray-900 pt-2">
+                                    <span>Grand Total</span>
+                                    <span>{settings.currency || 'Rs.'} {order.totalAmount?.toFixed(0)}</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                             
@@ -316,6 +340,28 @@ export default function OrderHistory() {
                         <span className="text-gray-950">{settings.currency || 'Rs.'}{(item.price * item.quantity).toFixed(0)}</span>
                       </div>
                     ))}
+                    
+                    {/* Mobile Breakdown */}
+                    {(order.taxAmount > 0 || order.serviceChargeAmount > 0) && (
+                      <div className="mt-2 pt-2 border-t border-gray-50 space-y-1 px-1">
+                        <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+                          <span>Subtotal</span>
+                          <span>{settings.currency || 'Rs.'} {(order.subtotal || (order.totalAmount - (order.taxAmount || 0) - (order.serviceChargeAmount || 0))).toFixed(0)}</span>
+                        </div>
+                        {order.serviceChargeAmount > 0 && (
+                          <div className="flex justify-between text-[10px] font-bold text-amber-600 uppercase">
+                            <span>S. Charge</span>
+                            <span>{settings.currency || 'Rs.'} {order.serviceChargeAmount.toFixed(0)}</span>
+                          </div>
+                        )}
+                        {order.taxAmount > 0 && (
+                          <div className="flex justify-between text-[10px] font-bold text-blue-600 uppercase">
+                            <span>VAT</span>
+                            <span>{settings.currency || 'Rs.'} {order.taxAmount.toFixed(0)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <button 

@@ -29,7 +29,7 @@ export const decryptTableId = (encrypted) => {
     // Check if it's the new dynamic salted payload (salt:tableId)
     if (res.includes(':')) {
       const extracted = res.split(':')[1];
-      if (!isNaN(extracted) && extracted.trim() !== '') {
+      if (extracted && extracted.trim() !== '') {
         return extracted;
       }
     }

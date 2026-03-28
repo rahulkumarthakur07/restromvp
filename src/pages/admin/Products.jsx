@@ -306,10 +306,10 @@ export default function Products() {
             </div>
           </div>
           
-          <div className="flex overflow-x-auto pb-1 gap-2 w-full hide-scrollbar">
+          <div className="flex overflow-x-auto pb-2 gap-2 w-full thin-scrollbar flex-nowrap">
             <button
               onClick={() => setSelectedFilterCategory('All')}
-              className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors shrink-0 ${
                 selectedFilterCategory === 'All' 
                   ? 'bg-gray-900 text-white shadow-sm' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -321,7 +321,7 @@ export default function Products() {
               <button
                 key={cat}
                 onClick={() => setSelectedFilterCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${
+                className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors shrink-0 ${
                   selectedFilterCategory === cat 
                     ? 'bg-gray-900 text-white shadow-sm' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -335,198 +335,218 @@ export default function Products() {
       )}
 
       {showAddForm && (
-        <form onSubmit={handleAddProduct} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-6 animate-in zoom-in-95 duration-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="space-y-1.5">
-              <label className="text-sm font-black text-gray-950 flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-blue-600" /> Name *
-              </label>
-              <input 
-                type="text" required
-                value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-gray-800"
-                placeholder="e.g. Steam Momo"
-              />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-white rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 border border-gray-100">
+            <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-black text-gray-950">{editingId ? 'Edit Product' : 'Add New Product'}</h2>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-0.5">Enter item details and pricing</p>
+              </div>
+              <button 
+                onClick={resetForm}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <Plus className="w-6 h-6 rotate-45" />
+              </button>
             </div>
             
-            <div className="space-y-1.5">
-              <label className="text-sm font-black text-gray-950 flex items-center gap-1.5">
-                <Package className="w-4 h-4 text-blue-600" /> Base Price *
-              </label>
-              <input 
-                type="number" step="0.01" required
-                value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-gray-800"
-                placeholder="0.00"
-              />
-            </div>
+            <form onSubmit={handleAddProduct} className="flex-1 overflow-y-auto p-8 space-y-8 hide-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-gray-950 flex items-center gap-2 px-1">
+                    <Tag className="w-4 h-4 text-blue-600" /> Name *
+                  </label>
+                  <input 
+                    type="text" required
+                    value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-gray-800"
+                    placeholder="e.g. Steam Momo"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-gray-950 flex items-center gap-2 px-1">
+                    <Package className="w-4 h-4 text-blue-600" /> Base Price *
+                  </label>
+                  <input 
+                    type="number" step="0.01" required
+                    value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-gray-800"
+                    placeholder="0.00"
+                  />
+                </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-black text-gray-950 flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 text-orange-500" /> Availability
-              </label>
-              <div className="flex bg-gray-100 p-1.5 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setNewProduct({...newProduct, inStock: true})}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-black uppercase transition-all flex items-center justify-center space-x-2 ${
-                    newProduct.inStock ? 'bg-white shadow-sm text-green-600' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>In Stock</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNewProduct({...newProduct, inStock: false})}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-black uppercase transition-all flex items-center justify-center space-x-2 ${
-                    !newProduct.inStock ? 'bg-white shadow-sm text-red-600' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Out of Stock</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-black text-gray-950 flex items-center gap-1.5">
-                <HistoryIcon className="w-4 h-4 text-purple-600" /> Discount Type
-              </label>
-              <div className="flex bg-gray-100 p-1.5 rounded-xl">
-                {['none', 'percent', 'flat'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-                      setDiscountType(type);
-                      if (type === 'none') {
-                        setDiscountValue('');
-                        setNewProduct({...newProduct, discountPrice: ''});
-                      }
-                    }}
-                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-black uppercase transition-all ${
-                      discountType === type ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {type === 'none' ? 'None' : type === 'percent' ? '%' : 'Rs.'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {discountType !== 'none' && (
-              <div className="space-y-1.5">
-                <label className="text-sm font-black text-gray-950">Discount Value</label>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      value={discountValue}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setDiscountValue(val);
-                        const price = parseFloat(newProduct.price) || 0;
-                        if (discountType === 'percent') {
-                          const dp = price * (1 - (parseFloat(val) || 0) / 100);
-                          setNewProduct({...newProduct, discountPrice: dp > 0 ? dp.toFixed(0) : '0'});
-                        } else {
-                          const dp = price - (parseFloat(val) || 0);
-                          setNewProduct({...newProduct, discountPrice: dp > 0 ? dp.toFixed(0) : '0'});
-                        }
-                      }}
-                      placeholder={discountType === 'percent' ? '% Off' : 'Flat Off'}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
-                    />
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-gray-950 flex items-center gap-2 px-1">
+                    <AlertCircle className="w-4 h-4 text-orange-500" /> Availability
+                  </label>
+                  <div className="flex bg-gray-100 p-2 rounded-2xl">
+                    <button
+                      type="button"
+                      onClick={() => setNewProduct({...newProduct, inStock: true})}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center space-x-2 ${
+                        newProduct.inStock ? 'bg-white shadow-md text-green-600' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>In Stock</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewProduct({...newProduct, inStock: false})}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center space-x-2 ${
+                        !newProduct.inStock ? 'bg-white shadow-md text-red-600' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                      <span>Out Stock</span>
+                    </button>
                   </div>
-                  {newProduct.discountPrice && (
-                    <div className="bg-green-50 text-green-700 px-3 py-2 rounded-xl border border-green-100 font-black text-[10px] whitespace-nowrap">
-                      Net: Rs.{newProduct.discountPrice}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-gray-950 flex items-center gap-2 px-1">
+                    <HistoryIcon className="w-4 h-4 text-purple-600" /> Discount Type
+                  </label>
+                  <div className="flex bg-gray-100 p-2 rounded-2xl">
+                    {['none', 'percent', 'flat'].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          setDiscountType(type);
+                          if (type === 'none') {
+                            setDiscountValue('');
+                            setNewProduct({...newProduct, discountPrice: ''});
+                          }
+                        }}
+                        className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-black uppercase transition-all ${
+                          discountType === type ? 'bg-white shadow-md text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        {type === 'none' ? 'None' : type === 'percent' ? '%' : 'Rs.'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {discountType !== 'none' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-black text-gray-950 px-1">Discount Value</label>
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          value={discountValue}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDiscountValue(val);
+                            const price = parseFloat(newProduct.price) || 0;
+                            if (discountType === 'percent') {
+                              const dp = price * (1 - (parseFloat(val) || 0) / 100);
+                              setNewProduct({...newProduct, discountPrice: dp > 0 ? dp.toFixed(0) : '0'});
+                            } else {
+                              const dp = price - (parseFloat(val) || 0);
+                              setNewProduct({...newProduct, discountPrice: dp > 0 ? dp.toFixed(0) : '0'});
+                            }
+                          }}
+                          placeholder={discountType === 'percent' ? '% Off' : 'Flat Off'}
+                          className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-sm"
+                        />
+                      </div>
+                      {newProduct.discountPrice && (
+                        <div className="bg-green-50 text-green-700 px-4 py-3 rounded-2xl border border-green-100 font-black text-xs whitespace-nowrap shadow-sm">
+                          Net: Rs.{newProduct.discountPrice}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-gray-950 px-1">Category</label>
+                  {!isCreatingNewCategory && existingCategories.length > 0 ? (
+                    <div className="flex items-center space-x-3">
+                      <select
+                        value={newProduct.category}
+                        onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                        className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-gray-800"
+                      >
+                        {existingCategories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                      <button 
+                        type="button" 
+                        onClick={() => { setIsCreatingNewCategory(true); setNewProduct({...newProduct, category: ''}); }}
+                        className="shrink-0 bg-blue-50 hover:bg-blue-100 text-blue-600 px-5 py-3.5 rounded-2xl font-black text-xs transition-all uppercase tracking-widest"
+                      >
+                        + New
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-3">
+                      <input 
+                        type="text" required
+                        value={newProduct.category} 
+                        onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                        className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold placeholder:text-gray-300"
+                        placeholder="e.g. Snacks"
+                      />
+                      {existingCategories.length > 0 && (
+                        <button 
+                          type="button" 
+                          onClick={() => { setIsCreatingNewCategory(false); setNewProduct({...newProduct, category: existingCategories[0]}); }}
+                          className="shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3.5 rounded-2xl font-black text-xs transition-all uppercase tracking-widest"
+                        >
+                          Back
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
-              </div>
-            )}
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-black text-gray-950">Category</label>
-              {!isCreatingNewCategory && existingCategories.length > 0 ? (
-                <div className="flex items-center space-x-2">
-                  <select
-                    value={newProduct.category}
-                    onChange={e => setNewProduct({...newProduct, category: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium text-gray-800"
-                  >
-                    {existingCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                  <button 
-                    type="button" 
-                    onClick={() => { setIsCreatingNewCategory(true); setNewProduct({...newProduct, category: ''}); }}
-                    className="shrink-0 bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2.5 rounded-xl font-black text-xs transition-all uppercase tracking-wider"
-                  >
-                    + New
-                  </button>
+                <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                  <label className="text-sm font-black text-gray-950 px-1">Item Image Source</label>
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <input 
+                      type="url"
+                      value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})}
+                      className="flex-1 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-sm"
+                      placeholder="Paste image URL here..."
+                      disabled={!!imageFile}
+                    />
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs font-black text-gray-400 uppercase">Or</span>
+                      <label className={`shrink-0 cursor-pointer px-6 py-3.5 rounded-2xl border-2 border-dashed transition-all flex items-center gap-3 ${imageFile ? 'bg-blue-50 border-blue-400 text-blue-600' : 'bg-gray-50 border-gray-300 text-gray-500 hover:border-blue-500 hover:bg-blue-50/10'}`}>
+                        <FileUp className="w-5 h-5 transition-transform group-hover:-translate-y-1" />
+                        <span className="text-sm font-black uppercase tracking-wider">{imageFile ? 'Selected' : 'Upload File'}</span>
+                        <input type="file" accept="image/*" onChange={handleImageFileChange} className="hidden" disabled={!!newProduct.image} />
+                      </label>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="text" required
-                    value={newProduct.category} 
-                    onChange={e => setNewProduct({...newProduct, category: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-                    placeholder="e.g. Snacks"
-                  />
-                  {existingCategories.length > 0 && (
-                    <button 
-                      type="button" 
-                      onClick={() => { setIsCreatingNewCategory(false); setNewProduct({...newProduct, category: existingCategories[0]}); }}
-                      className="shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-black text-xs transition-all uppercase tracking-wider"
-                    >
-                      Cancel
-                    </button>
+              </div>
+
+              <div className="flex justify-end pt-8 sticky bottom-0 bg-white/80 backdrop-blur-md">
+                <button 
+                  type="submit" 
+                  disabled={uploading} 
+                  className="w-full md:w-auto bg-gray-950 text-white px-12 py-4 flex items-center justify-center rounded-[1.25rem] font-black hover:bg-blue-600 transition-all active:scale-[0.98] disabled:opacity-70 shadow-2xl shadow-blue-200/50"
+                >
+                  {uploading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5 mr-3" />
+                      <span>{editingId ? 'Confirm Changes' : 'Create Product'}</span>
+                    </>
                   )}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-black text-gray-950">Image Source</label>
-              <div className="flex gap-2">
-                <input 
-                  type="url"
-                  value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})}
-                  className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm"
-                  placeholder="Image URL"
-                  disabled={!!imageFile}
-                />
-                <label className={`shrink-0 cursor-pointer px-4 py-2.5 rounded-xl border-2 border-dashed transition-all flex items-center gap-2 ${imageFile ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-blue-300'}`}>
-                  <FileUp className="w-4 h-4" />
-                  <span className="text-xs font-black uppercase">{imageFile ? 'Selected' : 'File'}</span>
-                  <input type="file" accept="image/*" onChange={handleImageFileChange} className="hidden" disabled={!!newProduct.image} />
-                </label>
+                </button>
               </div>
-            </div>
+            </form>
           </div>
-
-          <div className="flex justify-end pt-4 border-t border-gray-50">
-            <button 
-              type="submit" 
-              disabled={uploading} 
-              className="w-full md:w-auto bg-gray-900 text-white px-10 py-3.5 flex items-center justify-center rounded-2xl font-black hover:bg-black transition-all active:scale-[0.98] disabled:opacity-70 shadow-lg shadow-gray-200"
-            >
-              {uploading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                <>
-                  <Plus className="w-5 h-5 mr-2" />
-                  <span>{editingId ? 'Update Product' : 'Save Product'}</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        </div>
       )}
 
       {loading ? (
