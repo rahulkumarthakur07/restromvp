@@ -1,15 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2 } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2, Hotel } from 'lucide-react';
 import { generatePDFReceipt } from '../../utils/pdfGenerator';
 import LoaderScreen from '../../components/LoaderScreen';
+import { useNotificationSound } from '../../hooks/useNotificationSound';
+import { useRef } from 'react';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({});
+  const [cabins, setCabins] = useState([]);
+  const playNotification = useNotificationSound();
+  const initialLoad = useRef(true);
   const [receiptModal, setReceiptModal] = useState(null);
+  const { isDark } = useDarkMode();
+
+  // Helper to display a friendly table label
+  const formatTableLabel = (tableId) => {
+    if (!tableId) return '—';
+    if (String(tableId).startsWith('cabin-')) {
+      const cabinId = String(tableId).replace('cabin-', '');
+      const cabin = cabins.find(c => c.id === cabinId);
+      return cabin ? cabin.name : 'Cabin';
+    }
+    if (tableId === 'Walk-in') return 'Walk-in';
+    return `#${tableId}`;
+  };
+
+  const isCabin = (tableId) => String(tableId || '').startsWith('cabin-');
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -22,8 +43,22 @@ export default function Dashboard() {
     };
     fetchSettings();
 
-    const q = query(collection(db, 'orders'), orderBy('timestamp', 'desc'));
+    // Live cabins listener
+    const cabinUnsub = onSnapshot(collection(db, 'cabins'), snap => {
+      setCabins(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => cabinUnsub();
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, 'orders'), orderBy('timestamp', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!initialLoad.current) {
+        const hasNew = snapshot.docChanges().some(change => change.type === 'added');
+        if (hasNew) playNotification();
+      } else {
+        initialLoad.current = false;
+      }
       const ordersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -76,18 +111,36 @@ export default function Dashboard() {
             <div class="divider"></div>
           </div>
           ${order.items.map(i => `
-            <div class="flex">
+            <div class="flex" style="margin-bottom: 4px;">
               <span>${i.quantity}x ${i.name}</span>
-              <span>Rs. ${(i.price * i.quantity).toFixed(2)}</span>
+              <span>${settings.currency || 'Rs.'} ${( (i.price) * i.quantity).toFixed(0)}</span>
             </div>
           `).join('')}
           <div class="divider"></div>
-          <div class="flex bold">
-            <span>TOTAL</span>
-            <span>Rs. ${order.totalAmount?.toFixed(2) || '0.00'}</span>
+          <div class="flex" style="margin-bottom: 4px;">
+            <span>Subtotal</span>
+            <span>${settings.currency || 'Rs.'} ${(order.subtotal || order.totalAmount).toFixed(0)}</span>
           </div>
-          <div class="center" style="margin-top: 20px;">
+          ${order.serviceChargeAmount ? `
+            <div class="flex" style="margin-bottom: 4px;">
+              <span>Service Charge (${settings.serviceChargeRate}%)</span>
+              <span>${settings.currency || 'Rs.'} ${order.serviceChargeAmount.toFixed(0)}</span>
+            </div>
+          ` : ''}
+          ${order.taxAmount ? `
+            <div class="flex" style="margin-bottom: 4px;">
+              <span>VAT (${settings.taxRate}%)</span>
+              <span>${settings.currency || 'Rs.'} ${order.taxAmount.toFixed(0)}</span>
+            </div>
+          ` : ''}
+          <div class="divider"></div>
+          <div class="flex bold" style="font-size: 1.2em; margin-top: 5px;">
+            <span>TOTAL</span>
+            <span>${settings.currency || 'Rs.'} ${order.totalAmount?.toFixed(0) || '0'}</span>
+          </div>
+          <div class="center" style="margin-top: 30px; font-size: 0.9em; opacity: 0.8;">
             <div>Thank you for your visit!</div>
+            <div>Powered by RestroMVP</div>
           </div>
         </body>
       </html>
@@ -120,30 +173,33 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
+    return <LoaderScreen message="Loading Dashboard..." type="minimal" />;
   }
 
   const COLUMNS = [
     { id: 'Pending', label: 'New Orders', icon: Clock, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-    { id: 'Preparing', label: 'In Kitchen', icon: ChefHat, bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+    { id: 'InKitchen', label: 'Sent to Kitchen', icon: ChefHat, bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
     { id: 'Ready', label: 'Ready to Serve', icon: CheckCircle2, bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
     { id: 'Served', label: 'Served', icon: UtensilsCrossed, bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
   ];
 
-  const TABLE_COLORS = [
+  const TABLE_COLORS = isDark ? [
+    '#991B1B', '#1E40AF', '#065F46', '#92400E', '#5B21B6', 
+    '#9D174D', '#155E75', '#9A3412', '#3730A3', '#0F766E'
+  ] : [
     '#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', 
     '#EC4899', '#06B6D4', '#F97316', '#6366F1', '#14B8A6'
   ];
-  const getTableColor = (id) => TABLE_COLORS[(id - 1) % TABLE_COLORS.length] || '#1f2937';
+  const getTableColor = (id) => TABLE_COLORS[(id - 1) % TABLE_COLORS.length] || (isDark ? '#1f2937' : '#f3f4f6');
 
   return (
-    <div className="h-full flex flex-col space-y-6">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div className="flex flex-col h-full space-y-4">
+      <div className="flex flex-wrap gap-4 justify-between items-center bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Live Orders Dashboard</h1>
-          <p className="text-gray-500 font-medium mt-1">Manage kitchen workflow and payments</p>
+          <h1 className="text-xl font-bold text-gray-800">Live Orders Dashboard</h1>
+          <p className="text-gray-500 font-medium mt-0.5 text-sm">Manage kitchen workflow and payments</p>
         </div>
-        <div className="flex space-x-4">
+        <div className="flex space-x-3">
           <div className="text-center px-4 py-2 bg-blue-50 rounded-xl">
             <span className="block text-2xl font-bold text-blue-700">{orders.filter(o => o.status !== 'Served' && o.status !== 'Completed').length}</span>
             <span className="text-xs font-bold text-blue-600 uppercase tracking-wide">Active</span>
@@ -155,13 +211,13 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-x-auto pb-6 pt-2 gap-6 snap-x snap-mandatory lg:grid lg:grid-cols-4 hide-scrollbar">
+      <div className="flex-1 flex overflow-x-auto pb-4 pt-2 gap-4 snap-x snap-mandatory lg:grid lg:grid-cols-4 hide-scrollbar min-h-0">
         {COLUMNS.map(col => {
           const colOrders = orders.filter(o => o.status === col.id);
           const ColIcon = col.icon;
           
           return (
-            <div key={col.id} className="flex flex-col h-[calc(100vh-14rem)] bg-gray-100/50 rounded-3xl p-4 border border-gray-200/60 w-[85vw] shrink-0 snap-center lg:w-auto">
+            <div key={col.id} className="flex flex-col min-h-0 bg-gray-100/50 rounded-3xl p-4 border border-gray-200/60 w-[85vw] shrink-0 snap-center lg:w-auto">
               <div className="flex items-center justify-between mb-4 px-2">
                 <div className="flex items-center space-x-2">
                   <div className={`p-1.5 rounded-lg ${col.bg} ${col.text}`}>
@@ -169,9 +225,9 @@ export default function Dashboard() {
                   </div>
                   <h2 className="font-bold text-gray-800">{col.label}</h2>
                 </div>
-                <span className="bg-gray-200 text-gray-600 font-bold px-2.5 py-0.5 rounded-full text-sm">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shadow-inner ${col.bg} ${col.text} border ${col.border}`}>
                   {colOrders.length}
-                </span>
+                </div>
               </div>
 
               <div className="flex-1 space-y-4 overflow-y-auto">
@@ -182,22 +238,29 @@ export default function Dashboard() {
                     <div className={`p-4 flex flex-col gap-3 border-b ${col.border} ${col.bg}`}>
                       <div className="flex justify-between items-start">
                         <div className="flex items-center space-x-3">
-                          <div 
-                            className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-sm text-white shrink-0"
-                            style={{ backgroundColor: getTableColor(order.tableId) }}
+                          <div
+                            className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-sm text-white shrink-0 border border-white/10"
+                            style={{ backgroundColor: isCabin(order.tableId) ? (isDark ? '#4338CA' : '#6366F1') : getTableColor(order.tableId) }}
                           >
-                            <span className="text-[10px] font-black uppercase leading-none mb-0.5 opacity-90">Table</span>
-                            <span className="text-2xl font-black leading-none">{order.tableId}</span>
+                            {isCabin(order.tableId)
+                              ? <><Hotel className="w-6 h-6 mb-0.5" /><span className="text-[10px] font-black uppercase leading-none">CABIN</span></>
+                              : <><span className="text-[10px] font-black uppercase leading-none mb-0.5 opacity-90">{order.tableId === 'Walk-in' ? '🚶' : 'Table'}</span><span className="text-2xl font-black leading-none">{order.tableId === 'Walk-in' ? '' : order.tableId}</span></>}
                           </div>
                           <div className="flex flex-col">
-                            <div className="flex items-center space-x-2">
+                            <div className="flex flex-col items-start justify-center">
                               {col.id !== 'Served' && col.id !== 'Completed' ? (
-                                <div className={`font-black text-4xl tracking-tighter ${col.text} drop-shadow-sm`}>
+                                <div className={`font-black text-4xl tracking-tighter ${col.text} drop-shadow-sm leading-none pt-1`}>
                                   #{orders.filter(o => o.status !== 'Served' && o.status !== 'Completed' && o.id !== order.id && o.timestamp && order.timestamp && o.timestamp.seconds < order.timestamp.seconds).length + 1}
                                 </div>
                               ) : (
-                                <div className={`font-black text-2xl tracking-tighter ${col.text}`}>
+                                <div className={`font-black text-2xl tracking-tighter ${col.text} leading-none pt-1`}>
                                   #{order.tokenNumber}
+                                </div>
+                              )}
+                              {/* Newly added cabin/table name here */}
+                              {isCabin(order.tableId) && (
+                                <div className="text-sm font-black text-indigo-700 mt-1 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                                  {formatTableLabel(order.tableId).replace('🏠 ', '')}
                                 </div>
                               )}
                             </div>
@@ -245,7 +308,10 @@ export default function Dashboard() {
                     {/* Footer Actions */}
                     <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="font-black text-gray-800">Rs. {order.totalAmount?.toFixed(2) || '0.00'}</span>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grand Total</span>
+                          <span className="font-black text-gray-900 leading-none">{settings.currency || 'Rs.'} {order.totalAmount?.toFixed(2) || '0.00'}</span>
+                        </div>
                         <div className="flex space-x-2">
                           <button 
                             onClick={() => {
@@ -295,18 +361,20 @@ export default function Dashboard() {
                       {/* Status Actions */}
                       <div className={`${col.id === 'Served' ? 'flex flex-col gap-2' : 'grid grid-cols-2 gap-2'} pt-2 border-t border-gray-200`}>
                         {col.id === 'Pending' && (
-                          <button onClick={() => updateOrderField(order.id, 'status', 'Preparing')} className="col-span-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm font-bold transition-colors">
-                            Start Preparing
+                          <button onClick={() => updateOrderField(order.id, 'status', 'InKitchen')} className="col-span-2 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-black transition-colors flex items-center justify-center space-x-2">
+                            <ChefHat className="w-4 h-4" />
+                            <span>Send to Kitchen</span>
                           </button>
                         )}
-                        {col.id === 'Preparing' && (
-                          <button onClick={() => updateOrderField(order.id, 'status', 'Ready')} className="col-span-2 bg-green-500 hover:bg-green-600 text-white py-2 rounded-xl text-sm font-bold transition-colors">
-                            Mark Ready
+                        {col.id === 'InKitchen' && (
+                          <button onClick={() => updateOrderField(order.id, 'status', 'Ready')} className="col-span-2 bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-xl text-sm font-black transition-colors flex items-center justify-center space-x-2">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Mark as Ready to Serve</span>
                           </button>
                         )}
                         {col.id === 'Ready' && (
                           <button onClick={() => updateOrderField(order.id, 'status', 'Served')} className="col-span-2 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-xl text-sm font-bold transition-colors">
-                            Mark Served
+                            Mark as Served
                           </button>
                         )}
                         {col.id === 'Served' && (

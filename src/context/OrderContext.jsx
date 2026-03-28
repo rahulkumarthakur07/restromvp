@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { doc, onSnapshot, collection, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const OrderContext = createContext();
@@ -10,6 +10,9 @@ export const OrderProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [activeOrders, setActiveOrders] = useState([]);
   const [liveOrderStatuses, setLiveOrderStatuses] = useState({});
+  const [products, setProducts] = useState([]);
+  const [settings, setSettings] = useState({});
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   
   // Load from local storage on mount (optional for MVP but good for UX)
   useEffect(() => {
@@ -31,6 +34,39 @@ export const OrderProvider = ({ children }) => {
       localStorage.removeItem('resmvp_orders');
     }
   }, [activeOrders]);
+
+  // Global fetch for products and settings
+  const fetchGlobalData = useCallback(async () => {
+    if (isDataLoaded) return;
+    try {
+      const [settingsSnap, productsSnap] = await Promise.all([
+        getDoc(doc(db, 'settings', 'general')),
+        getDocs(collection(db, 'products'))
+      ]);
+      
+      if (settingsSnap.exists()) setSettings(settingsSnap.data());
+      
+      const pList = productsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      // Fallback to mock if empty
+      if (pList.length === 0) {
+        setProducts([
+          { id: '1', name: 'Steamed Momo', price: 15, category: 'Momo', image: 'https://placehold.co/400x300?text=Momo' },
+          { id: '2', name: 'Fried Rice', price: 12, category: 'Main', image: 'https://placehold.co/400x300?text=Fried+Rice' },
+          { id: '3', name: 'Coke', price: 3, category: 'Drinks', image: 'https://placehold.co/400x300?text=Coke' },
+        ]);
+      } else {
+        setProducts(pList);
+      }
+      setIsDataLoaded(true);
+    } catch (e) {
+      console.error("Global fetch error:", e);
+    }
+  }, [isDataLoaded]);
+
+  useEffect(() => {
+    fetchGlobalData();
+  }, [fetchGlobalData]);
 
   // Global listener to auto-remove orders that are marked as Completed (Archived)
   // and keep a synchronized map of their details.
@@ -103,7 +139,10 @@ export const OrderProvider = ({ children }) => {
       setActiveOrders,
       addActiveOrder,
       removeActiveOrder,
-      liveOrderStatuses
+      liveOrderStatuses,
+      products,
+      settings,
+      isDataLoaded
     }}>
       {children}
     </OrderContext.Provider>

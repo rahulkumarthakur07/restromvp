@@ -1,0 +1,31 @@
+name,price,category,discount_type,discount_value,image,in_stock
+Masala Dosa,180,South Indian,percent,10,https://foodish-api.com/images/dosa/dosa53.jpg,TRUE
+Crispy Dosa,170,South Indian,percent,8,https://foodish-api.com/images/dosa/dosa83.jpg,TRUE
+Steamed Rice,120,Main Course,percent,5,https://foodish-api.com/images/rice/rice2.jpg,TRUE
+Butter Chicken,350,Main Course,percent,15,https://foodish-api.com/images/butter-chicken/butter-chicken2.jpg,TRUE
+Soft Idly,100,South Indian,percent,5,https://foodish-api.com/images/idly/idly31.jpg,TRUE
+Plain Dosa,150,South Indian,percent,7,https://foodish-api.com/images/dosa/dosa2.jpg,TRUE
+Veg Burger,130,Fast Food,percent,10,https://foodish-api.com/images/burger/burger17.jpg,TRUE
+Chicken Biryani,280,Main Course,percent,12,https://foodish-api.com/images/biryani/biryani68.jpg,TRUE
+Samosa Plate,90,Snacks,percent,5,https://foodish-api.com/images/samosa/samosa15.jpg,TRUE
+White Pasta,220,Fast Food,percent,10,https://foodish-api.com/images/pasta/pasta2.jpg,TRUE
+Mini Idly,110,South Indian,percent,6,https://foodish-api.com/images/idly/idly50.jpg,TRUE
+Masala Dosa Special,190,South Indian,percent,9,https://foodish-api.com/images/dosa/dosa41.jpg,TRUE
+Chocolate Dessert,160,Dessert,percent,12,https://foodish-api.com/images/dessert/dessert3.jpg,TRUE
+Sweet Delight,150,Dessert,percent,10,https://foodish-api.com/images/dessert/dessert5.jpg,TRUE
+Butter Chicken Deluxe,370,Main Course,percent,15,https://foodish-api.com/images/butter-chicken/butter-chicken12.jpg,TRUE
+Hyderabadi Biryani,300,Main Course,percent,12,https://foodish-api.com/images/biryani/biryani5.jpg,TRUE
+Idly Combo,140,South Indian,percent,8,https://foodish-api.com/images/idly/idly61.jpg,TRUE
+Cheese Pizza,250,Fast Food,percent,10,https://foodish-api.com/images/pizza/pizza75.jpg,TRUE
+Double Burger,180,Fast Food,percent,12,https://foodish-api.com/images/burger/burger87.jpg,TRUE
+Pepperoni Pizza,270,Fast Food,percent,11,https://foodish-api.com/images/pizza/pizza67.jpg,TRUE
+Spicy Butter Chicken,360,Main Course,percent,14,https://foodish-api.com/images/butter-chicken/butter-chicken17.jpg,TRUE
+Veggie Pizza,240,Fast Food,percent,10,https://foodish-api.com/images/pizza/pizza49.jpg,TRUE
+Dessert Special,170,Dessert,percent,13,https://foodish-api.com/images/dessert/dessert36.jpg,TRUE
+Idly Sambhar,130,South Indian,percent,7,https://foodish-api.com/images/idly/idly57.jpg,TRUE
+Classic Burger,150,Fast Food,percent,9,https://foodish-api.com/images/burger/burger42.jpg,TRUE
+Cheese Burger,190,Fast Food,percent,12,https://foodish-api.com/images/burger/burger87.jpg,TRUE
+Sweet Treat,140,Dessert,percent,10,https://foodish-api.com/images/dessert/dessert27.jpg,TRUE
+Farmhouse Pizza,260,Fast Food,percent,11,https://foodish-api.com/images/pizza/pizza57.jpg,TRUE
+Red Sauce Pasta,230,Fast Food,percent,10,https://foodish-api.com/images/pasta/pasta9.jpg,TRUE
+Margherita Pizza,220,Fast Food,percent,9,https://foodish-api.com/images/pizza/pizza28.jpg,TRUE

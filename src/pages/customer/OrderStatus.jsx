@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, getDoc, collection, query, where } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, collection, query, where, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useOrder } from '../../context/OrderContext';
 import { Loader2, CheckCircle2, Clock, ChefHat, ArrowLeft, UtensilsCrossed, ReceiptText, Download, X, Sun, Moon } from 'lucide-react';
@@ -8,6 +8,8 @@ import { generatePDFReceipt } from '../../utils/pdfGenerator';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import LoaderScreen from '../../components/LoaderScreen';
 import { decryptTableId } from '../../utils/crypto';
+import { useRef } from 'react';
+import { useNotificationSound } from '../../hooks/useNotificationSound';
 
 export default function OrderStatus() {
   const { tableId: urlTableId } = useParams();
@@ -24,10 +26,39 @@ export default function OrderStatus() {
   
   // For manually viewing a bill from the list
   const [viewBillOrder, setViewBillOrder] = useState(null);
+  const playNotification = useNotificationSound();
+  const prevStatuses = useRef({});
 
   useEffect(() => {
     localStorage.setItem('resmvp_dismissed_bills', JSON.stringify(dismissedBills));
   }, [dismissedBills]);
+
+  // Handle eSewa Payment Callback
+  useEffect(() => {
+    const checkEsewaCallback = async () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const dataParam = searchParams.get('data');
+      if (dataParam) {
+        try {
+          // Decode URL-safe base64
+          const decodedStr = atob(dataParam.replace(/-/g, '+').replace(/_/g, '/'));
+          const decoded = JSON.parse(decodedStr);
+          if (decoded.status === 'COMPLETE') {
+            const orderId = decoded.transaction_uuid.split('-')[0];
+            await updateDoc(doc(db, 'orders', orderId), { paid: true });
+            
+            // Remove URL params to prevent re-triggering
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: newUrl}, '', newUrl);
+            alert("Payment Successful! Thank you.");
+          }
+        } catch (err) {
+          console.error("Error decoding eSewa callback", err);
+        }
+      }
+    };
+    checkEsewaCallback();
+  }, []);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -38,38 +69,32 @@ export default function OrderStatus() {
     };
     fetchSettings();
 
-    if (!activeOrders || activeOrders.length === 0) {
-      setLoading(false);
-      return;
-    }
+    // Live query: ALL non-Completed orders for this table (covers waiter-placed orders too)
+    const tableQuery = query(
+      collection(db, 'orders'),
+      where('tableId', '==', tableId),
+      where('status', 'in', ['Pending', 'InKitchen', 'Preparing', 'Ready', 'Served'])
+    );
 
-    const unsubscribes = [];
-    let loadedCount = 0;
-
-    activeOrders.forEach(orderRef => {
-      const unsub = onSnapshot(
-        doc(db, 'orders', orderRef.id),
-        (docSnap) => {
-          if (docSnap.exists()) {
-            setLiveOrders(prev => ({
-              ...prev,
-              [orderRef.id]: { id: docSnap.id, ...docSnap.data() }
-            }));
-          }
-          loadedCount++;
-          if (loadedCount >= activeOrders.length) setLoading(false);
-        },
-        (error) => {
-          console.error("Error listening to order:", error);
-          loadedCount++;
-          if (loadedCount >= activeOrders.length) setLoading(false);
+    const unsub = onSnapshot(tableQuery, (snapshot) => {
+      const newOrders = {};
+      snapshot.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        const id = docSnap.id;
+        // Play notification if status changed
+        if (prevStatuses.current[id] && prevStatuses.current[id] !== data.status) {
+          playNotification();
         }
-      );
-      unsubscribes.push(unsub);
-    });
+        prevStatuses.current[id] = data.status;
+        newOrders[id] = { id, ...data };
+      });
+      setLiveOrders(newOrders);
+      setLoading(false);
+    }, () => setLoading(false));
 
-    return () => unsubscribes.forEach(unsub => unsub());
-  }, [activeOrders]);
+    return () => unsub();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableId]);
 
   // Track dynamic queue of orders ahead
   useEffect(() => {
@@ -103,18 +128,80 @@ export default function OrderStatus() {
     await generatePDFReceipt(order, settings);
   };
 
+  const handleEsewaPayment = async (order) => {
+    try {
+      // Force clean 2-decimal maximum string and parse back to drop trailing zeros mapping floating point errors.
+      const cleanAmountStr = Number(order.totalAmount.toFixed(2)).toString();
+      
+      if (Number(cleanAmountStr) <= 0) {
+        alert("Amount must be greater than 0 to pay with eSewa.");
+        return;
+      }
+
+      const transactionUuid = `${order.id}-${Date.now()}`;
+      const totalAmount = cleanAmountStr;
+      const productCode = 'EPAYTEST';
+      const secret = '8gBm/:&EnhH.1/q';
+      // HMAC SHA256 of: total_amount,transaction_uuid,product_code
+      const message = `total_amount=${totalAmount},transaction_uuid=${transactionUuid},product_code=${productCode}`;
+      
+      const encoder = new TextEncoder();
+      const keyInfo = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+      const signatureBuffer = await crypto.subtle.sign('HMAC', keyInfo, encoder.encode(message));
+      const signature = btoa(String.fromCharCode.apply(null, new Uint8Array(signatureBuffer)));
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = 'https://rc-epay.esewa.com.np/api/epay/main/v2/form';
+
+      const fields = {
+        amount: totalAmount,
+        tax_amount: '0',
+        total_amount: totalAmount,
+        transaction_uuid: transactionUuid,
+        product_code: productCode,
+        product_service_charge: '0',
+        product_delivery_charge: '0',
+        success_url: window.location.href.split('?')[0],
+        failure_url: window.location.href.split('?')[0],
+        signed_field_names: 'total_amount,transaction_uuid,product_code',
+        signature: signature
+      };
+
+      Object.keys(fields).forEach(key => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = fields[key];
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err) {
+      console.error("eSewa payment initiation failed:", err);
+      alert("Failed to initiate payment. Please try again.");
+    }
+  };
+
   if (loading) {
     return <LoaderScreen message="Loading your orders..." />;
   }
 
   if (Object.keys(liveOrders).length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">No Active Orders</h2>
-        <p className="text-gray-500 mb-6">You haven't placed any orders yet.</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-950 dark:text-white flex flex-col items-center justify-center p-4 text-center transition-colors duration-300">
+        <h2 className="text-2xl font-black text-gray-950 dark:text-white mb-2">No Active Orders</h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-6 font-medium">You haven't placed any orders yet.</p>
         <button 
           onClick={() => navigate(`/table/${urlTableId}`)}
-          className="bg-blue-600 font-black text-white px-8 py-4 rounded-xl shadow-lg border-2 border-transparent hover:bg-blue-700 transition-colors"
+          className="bg-blue-600 font-black text-white px-8 py-4 rounded-2xl shadow-lg border-2 border-transparent hover:bg-blue-700 transition-all active:scale-95"
         >
           Browse Menu
         </button>
@@ -142,16 +229,16 @@ export default function OrderStatus() {
   const activeModalOrder = viewBillOrder || orderToPopup;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <header className="bg-white px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-950 dark:text-white pb-24 transition-colors duration-300">
+      <header className="bg-white dark:bg-gray-900 px-4 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center space-x-3">
-          <button onClick={() => navigate(`/table/${urlTableId}`)} className="p-2 -ml-2 hover:bg-gray-50 rounded-full text-gray-700">
+          <button onClick={() => navigate(`/table/${urlTableId}`)} className="p-2 -ml-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full text-gray-700 dark:text-gray-300">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-bold text-gray-800">Your Orders</h1>
+          <h1 className="text-xl font-black text-gray-950 dark:text-white">Your Orders</h1>
         </div>
-        <button onClick={toggleDarkMode} className="text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors">
-          {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        <button onClick={toggleDarkMode} className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 p-2.5 rounded-xl transition-all shadow-sm bg-gray-50 dark:bg-gray-800">
+          {isDark ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
         </button>
       </header>
 
@@ -161,7 +248,7 @@ export default function OrderStatus() {
           const StatusIcon = currentStatus.icon;
 
           return (
-            <div key={order.id} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col mb-6">
+            <div key={order.id} className="bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col mb-6">
               
               {/* Admin Message */}
               {order.adminMessage && (
@@ -216,15 +303,24 @@ export default function OrderStatus() {
                     </div>
                   ))}
                 </div>
-                <div className={`mt-4 pt-3 border-t border-gray-100 flex justify-between items-center text-lg font-black text-gray-900 border-b pb-4 mb-4`}>
+                <div className={`mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-lg font-black text-gray-950 dark:text-white border-b pb-4 mb-4`}>
                   <div className="flex items-center space-x-2">
                     <span>Total</span>
-                    <span className={`text-xs ml-2 px-2 py-0.5 rounded-md text-white border ${order.paid ? 'bg-green-500 border-green-600' : 'bg-gray-400 border-gray-500'}`}>
+                    <span className={`text-[10px] ml-2 px-2 py-0.5 rounded-lg text-white font-black border ${order.paid ? 'bg-green-500 border-green-600' : 'bg-amber-500 border-amber-600'}`}>
                       {order.paid ? 'PAID' : 'UNPAID'}
                     </span>
                   </div>
-                  <span>Rs. {order.totalAmount.toFixed(2)}</span>
+                  <span>Rs. {order.totalAmount.toFixed(0)}</span>
                 </div>
+
+                {!order.paid && (
+                  <button 
+                    onClick={() => handleEsewaPayment(order)}
+                    className="w-full bg-[#60bb46] hover:bg-[#52a33b] text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center space-x-2 mb-3"
+                  >
+                    <span>Pay with eSewa</span>
+                  </button>
+                )}
 
                 {(order.status === 'Served' || order.status === 'Completed') && (
                   <button 
@@ -242,19 +338,19 @@ export default function OrderStatus() {
         
         <button 
           onClick={() => navigate(`/table/${urlTableId}`)}
-          className="w-full bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold py-4 rounded-xl transition-colors shadow-sm mt-4"
+          className="w-full bg-white dark:bg-gray-900 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-800 font-black py-4 rounded-2xl transition-all shadow-sm mt-4 active:scale-95"
         >
-          + Add More Items (New Order)
+          + Add More Items
         </button>
       </main>
 
       {/* Bill Modal */}
       {activeModalOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h2 className="text-xl font-black text-gray-800 flex items-center">
-                <ReceiptText className="w-5 h-5 mr-2 text-gray-500" /> Digital Bill
+          <div className="bg-white dark:bg-gray-950 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+              <h2 className="text-xl font-black text-gray-950 dark:text-white flex items-center">
+                <ReceiptText className="w-5 h-5 mr-2 text-blue-600" /> Digital Bill
               </h2>
               <button 
                 onClick={() => {
@@ -271,32 +367,40 @@ export default function OrderStatus() {
             
             <div className="p-6 overflow-y-auto bg-white flex-1 relative print-area">
               <div className="text-center mb-6">
-                {settings.logo && <img src={settings.logo} className="h-12 w-auto mx-auto mb-3 grayscale opacity-80" alt="Logo"/>}
-                <h3 className="text-xl font-black text-gray-900">{settings.name || 'Restaurant'}</h3>
-                {settings.pan && <p className="text-xs text-gray-500 font-semibold mt-1">PAN: {settings.pan}</p>}
+                {settings.logo && <img src={settings.logo} className="h-12 w-auto mx-auto mb-3 grayscale opacity-80 dark:invert" alt="Logo"/>}
+                <h3 className="text-xl font-black text-gray-950 dark:text-white">{settings.name || 'Restaurant'}</h3>
+                {settings.pan && <p className="text-xs text-gray-500 dark:text-gray-400 font-bold mt-1 uppercase tracking-tight">PAN: {settings.pan}</p>}
               </div>
 
-              <div className="flex justify-between text-sm font-bold text-gray-500 mb-4 pb-2 border-b-2 border-dashed border-gray-200">
+              <div className="flex justify-between text-xs font-black text-gray-400 dark:text-gray-500 mb-4 pb-2 border-b-2 border-dashed border-gray-100 dark:border-gray-800 uppercase tracking-widest">
                 <span>Table {activeModalOrder.tableId}</span>
                 <span>Queue #{activeModalOrder.tokenNumber}</span>
               </div>
 
-              <div className="space-y-3 mb-6">
+              <div className="space-y-4 mb-6">
                 {activeModalOrder.items.map((i, idx) => (
-                  <div key={idx} className="flex justify-between text-sm">
-                    <span className="font-medium text-gray-800">{i.quantity}x {i.name}</span>
-                    <span className="font-bold text-gray-600">Rs. {(i.price * i.quantity).toFixed(2)}</span>
+                  <div key={idx} className="flex justify-between text-sm items-center">
+                    <span className="font-bold text-gray-800 dark:text-gray-200">{i.quantity}x {i.name}</span>
+                    <span className="font-black text-gray-950 dark:text-white">Rs. {(i.price * i.quantity).toFixed(0)}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-between items-center pt-4 border-t-2 border-dashed border-gray-200 text-lg">
-                <span className="font-black text-gray-900">Total Due</span>
-                <span className="font-black text-gray-900">Rs. {activeModalOrder.totalAmount.toFixed(2)}</span>
+              <div className="flex justify-between items-center pt-5 border-t-2 border-dashed border-gray-100 dark:border-gray-800">
+                <span className="font-black text-gray-950 dark:text-white text-lg">Total Due</span>
+                <span className="font-black text-blue-600 dark:text-blue-400 text-2xl">Rs. {activeModalOrder.totalAmount.toFixed(0)}</span>
               </div>
             </div>
 
             <div className="p-5 bg-gray-50 border-t border-gray-100 flex flex-col gap-3">
+              {!activeModalOrder.paid && (
+                <button 
+                  onClick={() => handleEsewaPayment(activeModalOrder)}
+                  className="w-full bg-[#60bb46] hover:bg-[#52a33b] text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center space-x-2"
+                >
+                  <span>Pay with eSewa</span>
+                </button>
+              )}
               <button 
                 onClick={() => handleDownloadReceipt(activeModalOrder)}
                 className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center space-x-2"

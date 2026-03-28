@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, QrCode, LogOut, BarChart3, History, Wallet, Settings, Sun, Moon, Menu as MenuIcon, X } from 'lucide-react';
+import { LayoutDashboard, Package, QrCode, LogOut, BarChart3, History, Wallet, Settings, Sun, Moon, Menu as MenuIcon, X, Users, Inbox, Hotel } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useDarkMode } from '../hooks/useDarkMode';
@@ -45,11 +45,14 @@ export default function AdminLayout() {
     { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
     { path: '/admin/history', icon: History, label: 'History' },
     { path: '/admin/udhar', icon: Wallet, label: 'Ledger (Udhar)' },
+    { path: '/admin/staff', icon: Users, label: 'Staff Management' },
+    { path: '/admin/kitchen-inbox', icon: Inbox, label: 'Kitchen Inbox' },
+    { path: '/admin/cabins', icon: Hotel, label: 'Cabins & VIP' },
     { path: '/admin/settings', icon: Settings, label: 'Settings' },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* Mobile Drawer Overlay */}
       {mobileMenuOpen && (
         <div 
@@ -77,12 +80,16 @@ export default function AdminLayout() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${
-                  isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                  isActive 
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 font-bold translate-x-1' 
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
+                <div className={`p-1.5 rounded-lg transition-colors ${isActive ? 'bg-white/20' : 'bg-gray-50 group-hover:bg-blue-50'}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <span className="text-sm">{item.label}</span>
               </Link>
             );
           })}
@@ -106,32 +113,27 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        {/* Mobile Header */}
-        <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center space-x-3 z-10 sticky top-0">
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Top header for mobile */}
+        <header className="md:hidden bg-white border-b border-gray-200 px-4 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-all duration-300">
           <button 
             onClick={() => setMobileMenuOpen(true)} 
-            className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 -ml-2 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all active:scale-95 border border-gray-100"
           >
             <MenuIcon className="w-6 h-6" />
           </button>
-          <div className="flex-1 flex items-center space-x-2 overflow-hidden">
-            {settings.logo && <img src={settings.logo} className="w-8 h-8 object-contain rounded-md shadow-sm border border-gray-100 shrink-0" alt="Logo"/>}
-            <h2 className="text-lg font-black text-gray-800 tracking-tight truncate">{settings.name || 'Admin'}</h2>
+          <div className="flex-1 flex items-center justify-center space-x-2 overflow-hidden mx-4">
+            {settings.logo && <img src={settings.logo} alt="Logo" className="w-8 h-8 rounded-lg object-contain border border-gray-100 shadow-sm shrink-0" />}
+            <h2 className="font-black text-gray-950 text-base tracking-tight truncate">{settings.name || 'Dashboard'}</h2>
           </div>
-          <div className="flex items-center space-x-1 shrink-0">
-            <button onClick={toggleDarkMode} className="text-gray-600 hover:bg-gray-100 p-2 rounded-lg">
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-            <button onClick={handleLogout} className="text-red-600 p-2 hover:bg-red-50 rounded-lg">
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
+          <button 
+            onClick={toggleDarkMode} 
+            className="text-gray-700 bg-gray-50 hover:bg-gray-100 p-2.5 rounded-xl border border-gray-100 transition-all active:scale-95 shadow-sm"
+          >
+            {isDark ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
+          </button>
         </header>
-
-        {/* Removed Mobile Nav (Bottom) since we now use Sidebar Drawer */}
-
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 xl:p-8 min-h-0">
           <Outlet />
         </div>
       </main>
