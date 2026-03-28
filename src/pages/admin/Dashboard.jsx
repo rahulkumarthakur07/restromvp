@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2, Hotel } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2, Hotel, Zap, LayoutDashboard } from 'lucide-react';
 import { generatePDFReceipt } from '../../utils/pdfGenerator';
 import LoaderScreen from '../../components/LoaderScreen';
 import { useNotificationSound } from '../../hooks/useNotificationSound';
@@ -18,9 +18,8 @@ export default function Dashboard() {
   const [receiptModal, setReceiptModal] = useState(null);
   const { isDark } = useDarkMode();
 
-  // Helper to display a friendly table label
   const formatTableLabel = (tableId) => {
-    if (!tableId) return '—';
+    if (!tableId) return 'â€”';
     if (String(tableId).startsWith('cabin-')) {
       const cabinId = String(tableId).replace('cabin-', '');
       const cabin = cabins.find(c => c.id === cabinId);
@@ -43,7 +42,6 @@ export default function Dashboard() {
     };
     fetchSettings();
 
-    // Live cabins listener
     const cabinUnsub = onSnapshot(collection(db, 'cabins'), snap => {
       setCabins(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
@@ -177,10 +175,10 @@ export default function Dashboard() {
   }
 
   const COLUMNS = [
-    { id: 'Pending', label: 'New Orders', icon: Clock, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-    { id: 'InKitchen', label: 'Sent to Kitchen', icon: ChefHat, bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
-    { id: 'Ready', label: 'Ready to Serve', icon: CheckCircle2, bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
-    { id: 'Served', label: 'Served', icon: UtensilsCrossed, bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
+    { id: 'Pending', label: 'New Orders', icon: Clock, color: 'from-amber-400 to-orange-500', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-400' },
+    { id: 'InKitchen', label: 'In Kitchen', icon: ChefHat, color: 'from-orange-400 to-red-500', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', dot: 'bg-orange-400' },
+    { id: 'Ready', label: 'Ready to Serve', icon: CheckCircle2, color: 'from-emerald-400 to-green-600', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', dot: 'bg-green-400' },
+    { id: 'Served', label: 'Served', icon: UtensilsCrossed, color: 'from-purple-500 to-indigo-600', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', dot: 'bg-purple-400' },
   ];
 
   const TABLE_COLORS = isDark ? [
@@ -192,32 +190,46 @@ export default function Dashboard() {
   ];
   const getTableColor = (id) => TABLE_COLORS[(id - 1) % TABLE_COLORS.length] || (isDark ? '#1f2937' : '#f3f4f6');
 
+  const activeOrders = orders.filter(o => o.status !== 'Served' && o.status !== 'Completed').length;
+  const servedOrders = orders.filter(o => o.status === 'Served').length;
+  const troubleOrders = orders.filter(o => !['Pending', 'InKitchen', 'Ready', 'Served', 'Completed'].includes(o.status)).length;
+
   return (
-    <div className="flex flex-col h-full space-y-4">
-      <div className="flex flex-wrap gap-4 justify-between items-center bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">Live Orders Dashboard</h1>
-          <p className="text-gray-500 font-medium mt-0.5 text-sm">Manage kitchen workflow and payments</p>
-        </div>
-        <div className="flex space-x-3">
-          <div className="text-center px-4 py-2 bg-blue-50 rounded-xl">
-            <span className="block text-2xl font-bold text-blue-700">{orders.filter(o => o.status !== 'Served' && o.status !== 'Completed').length}</span>
-            <span className="text-xs font-bold text-blue-600 uppercase tracking-wide">Active</span>
-          </div>
-          <div className="text-center px-4 py-2 bg-green-50 rounded-xl">
-            <span className="block text-2xl font-bold text-green-700">{orders.filter(o => o.status === 'Served').length}</span>
-            <span className="text-xs font-bold text-green-600 uppercase tracking-wide">Served</span>
-          </div>
-          {orders.some(o => !['Pending', 'InKitchen', 'Ready', 'Served', 'Completed'].includes(o.status)) && (
-            <div className="text-center px-4 py-2 bg-red-50 rounded-xl animate-pulse">
-              <span className="block text-2xl font-bold text-red-700">{orders.filter(o => !['Pending', 'InKitchen', 'Ready', 'Served', 'Completed'].includes(o.status)).length}</span>
-              <span className="text-xs font-bold text-red-600 uppercase tracking-wide font-black">Trouble</span>
+    <div className="flex flex-col h-full space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      {/* Premium Header */}
+      <div className="relative overflow-hidden bg-white rounded-3xl border border-gray-100 shadow-lg shadow-gray-100/50 p-5 md:p-6">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-blue-50/50 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative flex flex-wrap gap-4 justify-between items-center">
+          <div>
+            <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest mb-3">
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Live Operations</span>
             </div>
-          )}
+            <h1 className="text-xl md:text-2xl font-black text-gray-950 tracking-tight leading-none">Orders Dashboard</h1>
+            <p className="text-gray-400 font-medium mt-1 text-sm">Real-time kitchen workflow & payments</p>
+          </div>
+          <div className="flex space-x-3">
+            <div className="text-center px-5 py-3 bg-white border border-blue-100 rounded-2xl shadow-sm">
+              <span className="block text-2xl font-black text-blue-600">{activeOrders}</span>
+              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Active</span>
+            </div>
+            <div className="text-center px-5 py-3 bg-white border border-emerald-100 rounded-2xl shadow-sm">
+              <span className="block text-2xl font-black text-emerald-600">{servedOrders}</span>
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Served</span>
+            </div>
+            {troubleOrders > 0 && (
+              <div className="text-center px-5 py-3 bg-red-50 border border-red-100 rounded-2xl shadow-sm animate-pulse">
+                <span className="block text-2xl font-black text-red-600">{troubleOrders}</span>
+                <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Trouble</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-x-auto pb-4 pt-2 gap-4 snap-x snap-mandatory lg:flex lg:flex-nowrap hide-scrollbar min-h-0">
+      {/* Kanban Board */}
+      <div className="flex-1 flex overflow-x-auto pb-4 pt-1 gap-4 snap-x snap-mandatory lg:flex lg:flex-nowrap hide-scrollbar min-h-0">
         {(() => {
           const mainCols = COLUMNS.map(col => ({ 
             ...col, 
@@ -231,9 +243,11 @@ export default function Dashboard() {
               id: 'Unsorted', 
               label: 'Fix Status', 
               icon: Clock, 
+              color: 'from-red-500 to-rose-600',
               bg: 'bg-red-50', 
               border: 'border-red-200', 
               text: 'text-red-700',
+              dot: 'bg-red-400',
               orders: unsortedOrders
             });
           }
@@ -243,33 +257,38 @@ export default function Dashboard() {
             const ColIcon = col.icon;
             
             return (
-              <div key={col.id} className="flex flex-col min-h-0 bg-gray-100/50 rounded-3xl p-4 border border-gray-200/60 w-[85vw] shrink-0 snap-center lg:w-80">
-                <div className="flex items-center justify-between mb-4 px-2">
-                  <div className="flex items-center space-x-2">
-                    <div className={`p-1.5 rounded-lg ${col.bg} ${col.text}`}>
-                      <ColIcon className="w-5 h-5" />
+              <div key={col.id} className="flex flex-col min-h-0 bg-gray-100/60 rounded-3xl p-3.5 border border-gray-200/50 w-[85vw] shrink-0 snap-center lg:w-80">
+                {/* Column Header */}
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div className="flex items-center space-x-2.5">
+                    <div className={`w-8 h-8 rounded-2xl bg-linear-to-br ${col.color} flex items-center justify-center shadow-lg`}>
+                      <ColIcon className="w-4 h-4 text-white" />
                     </div>
-                    <h2 className="font-bold text-gray-800">{col.label}</h2>
+                    <h2 className="font-black text-gray-800 text-sm">{col.label}</h2>
                   </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shadow-inner ${col.bg} ${col.text} border ${col.border}`}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border ${col.bg} ${col.text} ${col.border}`}>
                     {colOrders.length}
                   </div>
                 </div>
 
-                <div className="flex-1 space-y-4 overflow-y-auto">
+                <div className="flex-1 space-y-3.5 overflow-y-auto">
                   {colOrders.map(order => (
-                    <div key={order.id} className={`bg-white rounded-2xl shadow-sm border ${col.border} overflow-hidden flex flex-col hover:shadow-md transition-shadow`}>
+                    <div key={order.id} className={`bg-white rounded-2xl border ${col.border} overflow-hidden flex flex-col hover:shadow-lg transition-all duration-300`}>
                       
-                      <div className={`p-4 flex flex-col gap-3 border-b ${col.border} ${col.bg}`}>
+                      {/* Order Header */}
+                      <div className={`p-4 flex flex-col gap-2.5 border-b ${col.border} ${col.bg}`}>
                         <div className="flex justify-between items-start">
                           <div className="flex items-center space-x-3">
                             <div
-                              className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-sm text-white shrink-0 border border-white/10"
-                              style={{ backgroundColor: isCabin(order.tableId) ? (isDark ? '#4338CA' : '#6366F1') : getTableColor(order.tableId) }}
+                              className="w-13 h-13 rounded-2xl flex flex-col items-center justify-center shadow-sm text-white shrink-0 border border-white/20"
+                              style={{ 
+                                width: 52, height: 52,
+                                backgroundColor: isCabin(order.tableId) ? (isDark ? '#4338CA' : '#6366F1') : getTableColor(order.tableId) 
+                              }}
                             >
                               {isCabin(order.tableId)
-                                ? <><Hotel className="w-6 h-6 mb-0.5" /><span className="text-[10px] font-black uppercase leading-none">CABIN</span></>
-                                : <><span className="text-[10px] font-black uppercase leading-none mb-0.5 opacity-90">{order.tableId === 'Walk-in' ? '🚶' : 'Table'}</span><span className="text-2xl font-black leading-none">{order.tableId === 'Walk-in' ? '' : order.tableId}</span></>}
+                                ? <><Hotel className="w-5 h-5 mb-0.5" /><span className="text-[9px] font-black uppercase leading-none">CABIN</span></>
+                                : <><span className="text-[9px] font-black uppercase leading-none mb-0.5 opacity-90">{order.tableId === 'Walk-in' ? 'ðŸš¶' : 'Table'}</span><span className="text-xl font-black leading-none">{order.tableId === 'Walk-in' ? '' : order.tableId}</span></>}
                             </div>
                             <div className="flex flex-col">
                               <div className="flex flex-col items-start justify-center">
@@ -283,13 +302,13 @@ export default function Dashboard() {
                                   </div>
                                 )}
                                 {isCabin(order.tableId) && (
-                                  <div className="text-sm font-black text-indigo-700 mt-1 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
-                                    {formatTableLabel(order.tableId).replace('🏠 ', '')}
+                                  <div className="text-xs font-black text-indigo-700 mt-1 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                                    {formatTableLabel(order.tableId).replace('ðŸ  ', '')}
                                   </div>
                                 )}
                               </div>
-                              <div className="text-xs font-bold text-gray-500 flex items-center mt-1">
-                                <Clock className="w-3.5 h-3.5 mr-1 text-gray-400" />
+                              <div className="text-xs font-bold text-gray-400 flex items-center mt-1">
+                                <Clock className="w-3 h-3 mr-1" />
                                 {order.timestamp?.toDate ? new Date(order.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now'}
                               </div>
                             </div>
@@ -297,18 +316,18 @@ export default function Dashboard() {
                         </div>
                         
                         {((order.customerName || order.customerPhone) || order.message) && (
-                          <div className="flex flex-col gap-2 mt-2">
+                          <div className="flex flex-col gap-1.5 mt-1">
                             {(order.customerName || order.customerPhone) && (
-                              <div className="flex items-center space-x-2 text-sm text-gray-700 bg-white/70 p-2.5 rounded-xl border border-white">
-                                <User className="w-4 h-4 text-gray-500 shrink-0" />
-                                <span className="font-bold truncate">
-                                  {order.customerName || 'Guest'} {order.customerPhone && <span className="text-gray-500 font-medium ml-1">({order.customerPhone})</span>}
+                              <div className="flex items-center space-x-2 text-sm text-gray-700 bg-white/70 p-2 rounded-xl border border-white">
+                                <User className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                <span className="font-bold truncate text-xs">
+                                  {order.customerName || 'Guest'} {order.customerPhone && <span className="text-gray-400 font-medium">({order.customerPhone})</span>}
                                 </span>
                               </div>
                             )}
                             {order.message && (
-                              <div className="bg-yellow-100 text-yellow-800 p-3 rounded-xl border border-yellow-200 text-sm font-bold shadow-sm flex items-start">
-                                <span className="mr-2 text-yellow-600">📝</span>
+                              <div className="bg-yellow-50 text-yellow-800 p-2.5 rounded-xl border border-yellow-200 text-xs font-bold flex items-start">
+                                <span className="mr-1.5 text-yellow-500">ðŸ“</span>
                                 <span>{order.message}</span>
                               </div>
                             )}
@@ -316,31 +335,33 @@ export default function Dashboard() {
                         )}
                       </div>
                       
+                      {/* Items */}
                       <div className="p-4 flex-1">
-                        <ul className="space-y-2.5 mb-2">
+                        <ul className="space-y-2 mb-1">
                           {order.items.map((item, idx) => (
                             <li key={idx} className="flex items-start text-sm">
-                              <span className="font-bold text-gray-400 w-6 shrink-0">{item.quantity}x</span>
-                              <span className="font-medium text-gray-800">{item.name}</span>
+                              <span className="font-black text-gray-300 w-6 shrink-0 text-xs">{item.quantity}x</span>
+                              <span className="font-bold text-gray-700 text-sm">{item.name}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
 
+                      {/* Tax Breakdown */}
                       {(order.taxAmount > 0 || order.serviceChargeAmount > 0) && (
-                        <div className="px-4 py-2 bg-gray-50/50 border-t border-gray-100 space-y-1">
-                          <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                        <div className="px-4 py-2 bg-gray-50/70 border-t border-gray-100 space-y-1">
+                          <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tight">
                             <span>Subtotal</span>
                             <span>{settings.currency || 'Rs.'} {(order.subtotal || (order.totalAmount - (order.taxAmount || 0) - (order.serviceChargeAmount || 0))).toFixed(0)}</span>
                           </div>
                           {order.serviceChargeAmount > 0 && (
-                            <div className="flex justify-between text-[10px] font-bold text-amber-600 uppercase tracking-tighter">
+                            <div className="flex justify-between text-[10px] font-bold text-amber-600 uppercase tracking-tight">
                               <span>S. Charge</span>
                               <span>{settings.currency || 'Rs.'} {order.serviceChargeAmount.toFixed(0)}</span>
                             </div>
                           )}
                           {order.taxAmount > 0 && (
-                            <div className="flex justify-between text-[10px] font-bold text-blue-600 uppercase tracking-tighter">
+                            <div className="flex justify-between text-[10px] font-bold text-blue-600 uppercase tracking-tight">
                               <span>VAT</span>
                               <span>{settings.currency || 'Rs.'} {order.taxAmount.toFixed(0)}</span>
                             </div>
@@ -348,37 +369,38 @@ export default function Dashboard() {
                         </div>
                       )}
 
-                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 space-y-3">
+                      {/* Actions Footer */}
+                      <div className="px-4 py-3 bg-gray-50/50 border-t border-gray-100 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex flex-col">
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grand Total</span>
                             <span className="font-black text-gray-950 leading-none text-base">{settings.currency || 'Rs.'} {order.totalAmount?.toFixed(0)}</span>
                           </div>
-                          <div className="flex space-x-2">
+                          <div className="flex space-x-1.5">
                             <button 
                               onClick={() => {
                                 const msg = window.prompt("Enter message for table (blank to clear):", order.adminMessage || "");
                                 if (msg !== null) updateOrderField(order.id, 'adminMessage', msg);
                               }}
-                              className="p-1.5 rounded-full text-gray-500 hover:text-blue-600 hover:bg-white transition-colors border border-transparent shadow-sm hover:shadow"
+                              className="p-1.5 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                               title="Message Table"
                             >
-                              <span className="text-sm leading-none block">💬</span>
+                              <span className="text-sm leading-none block">ðŸ’¬</span>
                             </button>
                             <button 
                               onClick={async () => {
-                                if (window.confirm("Are you sure you want to completely delete this order?")) {
+                                if (window.confirm("Delete this order?")) {
                                   try { await deleteDoc(doc(db, 'orders', order.id)); } catch (e) { alert("Failed to delete."); }
                                 }
                               }}
-                              className="p-1.5 rounded-full text-gray-500 hover:text-red-600 hover:bg-white transition-colors border border-transparent shadow-sm hover:shadow"
+                              className="p-1.5 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                               title="Delete Order"
                             >
-                              <span className="text-sm leading-none block">🗑️</span>
+                              <span className="text-sm leading-none block">ðŸ—‘ï¸</span>
                             </button>
                             <button 
                               onClick={() => handlePrint(order)}
-                              className="p-1.5 rounded-full text-gray-500 hover:text-blue-600 hover:bg-white transition-colors border border-transparent shadow-sm hover:shadow"
+                              className="p-1.5 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                               title="Print Bill"
                             >
                               <Printer className="w-4 h-4" />
@@ -387,10 +409,10 @@ export default function Dashboard() {
                             {col.id !== 'Served' && (
                               <button 
                                 onClick={() => updateOrderField(order.id, 'paid', !order.paid)}
-                                className={`flex items-center space-x-1 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${
+                                className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-black transition-all border ${
                                   order.paid 
-                                    ? 'bg-green-100 text-green-700 border-green-200' 
-                                    : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                    : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'
                                 }`}
                               >
                                 <DollarSign className="w-3 h-3" />
@@ -400,26 +422,26 @@ export default function Dashboard() {
                           </div>
                         </div>
                         
-                        <div className={`${col.id === 'Served' ? 'flex flex-col gap-2' : 'grid grid-cols-2 gap-2'} pt-2 border-t border-gray-200`}>
+                        <div className={`${col.id === 'Served' ? 'flex flex-col gap-2' : 'grid grid-cols-2 gap-2'} pt-2 border-t border-gray-100/80`}>
                           {col.id === 'Pending' && (
-                            <button onClick={() => updateOrderField(order.id, 'status', 'InKitchen')} className="col-span-2 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-black transition-colors flex items-center justify-center space-x-2">
+                            <button onClick={() => updateOrderField(order.id, 'status', 'InKitchen')} className="col-span-2 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 flex items-center justify-center space-x-2 shadow-lg shadow-orange-100">
                               <ChefHat className="w-4 h-4" />
                               <span>Send to Kitchen</span>
                             </button>
                           )}
                           {col.id === 'Unsorted' && (
-                            <button onClick={() => updateOrderField(order.id, 'status', 'Pending')} className="col-span-2 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-black transition-colors flex items-center justify-center space-x-2">
+                            <button onClick={() => updateOrderField(order.id, 'status', 'Pending')} className="col-span-2 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 flex items-center justify-center space-x-2 shadow-lg shadow-red-100">
                               <span>Initialize as New Order</span>
                             </button>
                           )}
                           {col.id === 'InKitchen' && (
-                            <button onClick={() => updateOrderField(order.id, 'status', 'Ready')} className="col-span-2 bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-xl text-sm font-black transition-colors flex items-center justify-center space-x-2">
+                            <button onClick={() => updateOrderField(order.id, 'status', 'Ready')} className="col-span-2 bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 flex items-center justify-center space-x-2 shadow-lg shadow-emerald-100">
                               <CheckCircle2 className="w-4 h-4" />
-                              <span>Mark as Ready to Serve</span>
+                              <span>Mark as Ready</span>
                             </button>
                           )}
                           {col.id === 'Ready' && (
-                            <button onClick={() => updateOrderField(order.id, 'status', 'Served')} className="col-span-2 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-xl text-sm font-bold transition-colors">
+                            <button onClick={() => updateOrderField(order.id, 'status', 'Served')} className="col-span-2 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-purple-100">
                               Mark as Served
                             </button>
                           )}
@@ -427,14 +449,14 @@ export default function Dashboard() {
                             <>
                               <button 
                                 onClick={() => setReceiptModal(order)}
-                                className={`col-span-2 py-3 rounded-xl text-sm font-black transition-colors border-2 shadow-sm flex items-center justify-center space-x-2 ${
+                                className={`col-span-2 py-3 rounded-2xl text-sm font-black transition-all active:scale-95 border-2 shadow-sm flex items-center justify-center space-x-2 ${
                                   order.paid 
-                                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
                                     : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
                                 }`}
                               >
                                 <DollarSign className="w-5 h-5" />
-                                <span className="text-base tracking-wide">{order.paid ? 'PAYMENT RECEIVED' : 'MARK AS PAID'}</span>
+                                <span>{order.paid ? 'PAYMENT RECEIVED' : 'MARK AS PAID'}</span>
                               </button>
                               <button onClick={() => updateOrderField(order.id, 'status', 'Ready')} className="col-span-2 text-gray-400 hover:text-gray-600 py-1 rounded-xl text-xs font-bold transition-colors">
                                 Undo (Return to Ready)
@@ -446,8 +468,9 @@ export default function Dashboard() {
                     </div>
                   ))}
                   {colOrders.length === 0 && (
-                    <div className="h-24 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-medium text-sm">
-                      No orders
+                    <div className="h-24 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-gray-300 font-bold text-sm gap-2">
+                      <ColIcon className="w-6 h-6 opacity-30" />
+                      <span className="text-xs font-black uppercase tracking-widest">No orders</span>
                     </div>
                   )}
                 </div>
@@ -457,47 +480,50 @@ export default function Dashboard() {
         })()}
       </div>
 
+      {/* Receipt Modal */}
       {receiptModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-gray-100 text-center relative">
-              <button onClick={() => setReceiptModal(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center pb-0.5">
-                x
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+            <div className="p-8 border-b border-gray-50 text-center relative space-y-4">
+              <button onClick={() => setReceiptModal(null)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-full w-9 h-9 flex items-center justify-center transition-colors">
+                âœ•
               </button>
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 bg-emerald-100 rounded-3xl flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
               </div>
-              <h2 className="text-2xl font-black text-gray-800 mb-1">Payment Received</h2>
-              <p className="text-gray-500 font-medium">Order #{receiptModal.tokenNumber} is now complete.</p>
+              <div>
+                <h2 className="text-2xl font-black text-gray-950 mb-1">Payment Received</h2>
+                <p className="text-gray-400 font-medium text-sm">Order #{receiptModal.tokenNumber} is complete.</p>
+              </div>
             </div>
 
-            <div className="p-6 space-y-3 bg-gray-50">
+            <div className="p-6 space-y-3 bg-gray-50/50">
               <button 
                 onClick={() => handlePrint(receiptModal)}
-                className="w-full bg-white hover:bg-gray-100 text-gray-800 border border-gray-200 py-3 rounded-xl font-bold flex items-center justify-center transition-colors shadow-sm"
+                className="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center transition-all active:scale-95 shadow-sm"
               >
-                <Printer className="w-5 h-5 mr-3 text-gray-500" />
+                <Printer className="w-4 h-4 mr-2 text-gray-500" />
                 Print Receipt
               </button>
 
               <button 
                 onClick={() => handleDownloadReceipt(receiptModal)}
-                className="w-full bg-white hover:bg-gray-100 text-gray-800 border border-gray-200 py-3 rounded-xl font-bold flex items-center justify-center transition-colors shadow-sm"
+                className="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center transition-all active:scale-95 shadow-sm"
               >
-                <Download className="w-5 h-5 mr-3 text-gray-500" />
+                <Download className="w-4 h-4 mr-2 text-gray-500" />
                 Download Receipt
               </button>
 
               <button 
                 onClick={() => handleShareReceipt(receiptModal)}
-                className="w-full bg-white hover:bg-gray-100 text-gray-800 border border-gray-200 py-3 rounded-xl font-bold flex items-center justify-center transition-colors shadow-sm"
+                className="w-full bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center transition-all active:scale-95 shadow-sm"
               >
-                <Share2 className="w-5 h-5 mr-3 text-gray-500" />
+                <Share2 className="w-4 h-4 mr-2 text-gray-500" />
                 Share Receipt
               </button>
             </div>
 
-            <div className="p-4 border-t border-gray-100 bg-white">
+            <div className="p-5 border-t border-gray-100 bg-white">
               <button 
                 onClick={async () => {
                   try {
@@ -508,9 +534,9 @@ export default function Dashboard() {
                     console.error("Error archiving order", e);
                   }
                 }}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-xl shadow-lg shadow-green-200 transition-colors"
+                className="w-full bg-gray-950 hover:bg-black text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest"
               >
-                Done & Archive
+                Done & Archive Order
               </button>
             </div>
           </div>
@@ -519,3 +545,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+

@@ -15,6 +15,7 @@ const AdminTables = lazy(() => import("./pages/admin/Tables"));
 const Analytics = lazy(() => import("./pages/admin/Analytics"));
 const OrderHistory = lazy(() => import("./pages/admin/History"));
 const Udhar = lazy(() => import("./pages/admin/Udhar"));
+const AdminPOS = lazy(() => import("./pages/admin/AdminPOS"));
 const AdminWaiters = lazy(() => import("./pages/admin/Waiters"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const KitchenInbox = lazy(() => import("./pages/admin/KitchenInbox"));
@@ -82,6 +83,7 @@ function App() {
               <Route path="/admin/cabins" element={<CabinManager />} />
               <Route path="/admin/settings" element={<Settings />} />
               <Route path="/admin/subscription" element={<Subscription />} />
+              <Route path="/admin/pos" element={<AdminPOS />} />
             </Route>
 
             {/* Waiter Routes */}
