@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, QrCode, LogOut, BarChart3, History, Wallet, Settings, Sun, Moon, Menu as MenuIcon, X, Users, Inbox, Hotel } from 'lucide-react';
+import { LayoutDashboard, Package, QrCode, LogOut, BarChart3, History, Wallet, Settings, Sun, Moon, Menu as MenuIcon, X, Users, Inbox, Hotel, CreditCard, Sparkles } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useDarkMode } from '../hooks/useDarkMode';
@@ -95,6 +95,20 @@ export default function AdminLayout() {
           })}
         </nav>
         <div className="p-4 border-t border-gray-200 space-y-2">
+          <Link
+            to="/admin/subscription"
+            className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+              location.pathname === '/admin/subscription'
+                ? 'bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-100 font-bold'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-purple-600'
+            }`}
+          >
+            <div className={`p-1.5 rounded-lg transition-colors ${location.pathname === '/admin/subscription' ? 'bg-white/20' : 'bg-gray-50 group-hover:bg-purple-50'}`}>
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <span>Subscription</span>
+          </Link>
+
           <button 
             onClick={toggleDarkMode}
             className="flex items-center space-x-3 text-gray-600 hover:bg-gray-50 w-full px-4 py-3 rounded-xl transition-colors"
@@ -133,7 +147,7 @@ export default function AdminLayout() {
             {isDark ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 xl:p-8 min-h-0">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 xl:p-8 min-h-0 relative">
           <Outlet />
         </div>
       </main>

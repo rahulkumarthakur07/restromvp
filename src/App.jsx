@@ -19,6 +19,7 @@ const AdminWaiters = lazy(() => import("./pages/admin/Waiters"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const KitchenInbox = lazy(() => import("./pages/admin/KitchenInbox"));
 const CabinManager = lazy(() => import("./pages/admin/CabinManager"));
+const Subscription = lazy(() => import("./pages/admin/Subscription"));
 
 // 🔥 Waiter Pages
 const WaiterLogin = lazy(() => import("./pages/waiter/WaiterLogin"));
@@ -80,6 +81,7 @@ function App() {
               <Route path="/admin/kitchen-inbox" element={<KitchenInbox />} />
               <Route path="/admin/cabins" element={<CabinManager />} />
               <Route path="/admin/settings" element={<Settings />} />
+              <Route path="/admin/subscription" element={<Subscription />} />
             </Route>
 
             {/* Waiter Routes */}

@@ -235,3 +235,19 @@ html.dark .thin-scrollbar::-webkit-scrollbar-thumb:hover {
   display: none !important;
 }
 
+/* Utility to force light theme on elements like QR codes for scanability */
+.force-light {
+  background-color: white !important;
+  color: #1f2937 !important; /* gray-800 */
+  border-color: #f3f4f6 !important; /* gray-100 */
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+}
+/* Ensure standard children also stay dark-text regardless of dark mode */
+.force-light h1, .force-light h2, .force-light h3, .force-light p, .force-light span:not(.text-white) {
+  color: #1f2937 !important;
+}
+.force-light .bg-gray-50, .force-light .bg-gray-100 {
+  background-color: #f9fafb !important;
+  border-color: #f3f4f6 !important;
+}
+
