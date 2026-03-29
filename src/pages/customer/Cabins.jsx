@@ -11,7 +11,7 @@ export default function Cabins() {
   const { tableId: urlTableId } = useParams();
   const tableId = decryptTableId(urlTableId);
   const navigate = useNavigate();
-  const { isDark } = useDarkMode();
+  const { isDark } = useDarkMode('dark');
 
   const [cabins, setCabins] = useState([]);
   const [loading, setLoading] = useState(true);

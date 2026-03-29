@@ -22,7 +22,7 @@ export default function OrderStatus() {
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({});
   const [dismissedBills, setDismissedBills] = useState(() => JSON.parse(localStorage.getItem('resmvp_dismissed_bills') || '[]'));
-  const { isDark, toggleDarkMode } = useDarkMode();
+  const { isDark, toggleDarkMode } = useDarkMode('dark');
   
   // For manually viewing a bill from the list
   const [viewBillOrder, setViewBillOrder] = useState(null);

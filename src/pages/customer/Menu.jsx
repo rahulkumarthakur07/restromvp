@@ -41,7 +41,7 @@ export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [settings, setSettings] = useState(globalSettings);
   const [showSplash, setShowSplash] = useState(!isDataLoaded);
-  const { isDark, toggleDarkMode } = useDarkMode();
+  const { isDark, toggleDarkMode } = useDarkMode('dark');
 
   // For MVP without DB data, we use some mock products if DB is empty
   const mockProducts = [
@@ -325,7 +325,7 @@ export default function Menu() {
         <motion.div 
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-50"
         >
           <button 
             onClick={() => navigate(`/table/${urlTableId}/cart`)}

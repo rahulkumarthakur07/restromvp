@@ -1,7 +1,7 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2, Hotel, Zap, LayoutDashboard } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2, Hotel, Zap, LayoutDashboard, MessageSquare, Trash2, FileText, Footprints } from 'lucide-react';
 import { generatePDFReceipt } from '../../utils/pdfGenerator';
 import LoaderScreen from '../../components/LoaderScreen';
 import { useNotificationSound } from '../../hooks/useNotificationSound';
@@ -16,7 +16,7 @@ export default function Dashboard() {
   const playNotification = useNotificationSound();
   const initialLoad = useRef(true);
   const [receiptModal, setReceiptModal] = useState(null);
-  const { isDark } = useDarkMode();
+  const { isDark } = useDarkMode('light');
 
   const formatTableLabel = (tableId) => {
     if (!tableId) return 'â€”';
@@ -288,7 +288,9 @@ export default function Dashboard() {
                             >
                               {isCabin(order.tableId)
                                 ? <><Hotel className="w-5 h-5 mb-0.5" /><span className="text-[9px] font-black uppercase leading-none">CABIN</span></>
-                                : <><span className="text-[9px] font-black uppercase leading-none mb-0.5 opacity-90">{order.tableId === 'Walk-in' ? 'ðŸš¶' : 'Table'}</span><span className="text-xl font-black leading-none">{order.tableId === 'Walk-in' ? '' : order.tableId}</span></>}
+                                : order.tableId === 'Walk-in'
+                                ? <><Footprints className="w-5 h-5 mb-0.5" /><span className="text-[9px] font-black uppercase leading-none">Walk-in</span></>
+                                : <><span className="text-[9px] font-black uppercase leading-none mb-0.5 opacity-90">Table</span><span className="text-xl font-black leading-none">{order.tableId}</span></>}
                             </div>
                             <div className="flex flex-col">
                               <div className="flex flex-col items-start justify-center">
@@ -303,7 +305,7 @@ export default function Dashboard() {
                                 )}
                                 {isCabin(order.tableId) && (
                                   <div className="text-xs font-black text-indigo-700 mt-1 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
-                                    {formatTableLabel(order.tableId).replace('ðŸ  ', '')}
+                                    {formatTableLabel(order.tableId)}
                                   </div>
                                 )}
                               </div>
@@ -327,7 +329,7 @@ export default function Dashboard() {
                             )}
                             {order.message && (
                               <div className="bg-yellow-50 text-yellow-800 p-2.5 rounded-xl border border-yellow-200 text-xs font-bold flex items-start">
-                                <span className="mr-1.5 text-yellow-500">ðŸ“</span>
+                                <FileText className="w-4 h-4 mr-1.5 text-yellow-500 shrink-0" />
                                 <span>{order.message}</span>
                               </div>
                             )}
@@ -385,7 +387,7 @@ export default function Dashboard() {
                               className="p-1.5 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                               title="Message Table"
                             >
-                              <span className="text-sm leading-none block">ðŸ’¬</span>
+                              <MessageSquare className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={async () => {
@@ -396,7 +398,7 @@ export default function Dashboard() {
                               className="p-1.5 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                               title="Delete Order"
                             >
-                              <span className="text-sm leading-none block">ðŸ—‘ï¸</span>
+                              <Trash2 className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => handlePrint(order)}

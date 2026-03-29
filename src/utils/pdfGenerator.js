@@ -99,6 +99,13 @@ export const generatePDFReceipt = async (order, settings) => {
   doc.setFontSize(14);
   doc.text('TOTAL DUE', 20, y);
   doc.text(`${currency} ${order.totalAmount?.toFixed(2) || '0.00'}`, 190, y, { align: 'right' });
+  y += 10;
+
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'normal');
+  doc.text('Payment Method', 20, y);
+  const pmText = order.paymentMethod === 'udhar' ? 'Credit (Udhar)' : (order.paymentMethod ? order.paymentMethod.toUpperCase() : 'UNPAID');
+  doc.text(pmText, 190, y, { align: 'right' });
   y += 20;
 
   doc.setFont(undefined, 'normal');

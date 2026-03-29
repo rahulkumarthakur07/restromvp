@@ -21,6 +21,12 @@ const Settings = lazy(() => import("./pages/admin/Settings"));
 const KitchenInbox = lazy(() => import("./pages/admin/KitchenInbox"));
 const CabinManager = lazy(() => import("./pages/admin/CabinManager"));
 const Subscription = lazy(() => import("./pages/admin/Subscription"));
+const Inventory = lazy(() => import("./pages/admin/Inventory"));
+const AllStaff = lazy(() => import("./pages/admin/staff/AllStaff"));
+const StaffAttendance = lazy(() => import("./pages/admin/staff/Attendance"));
+const StaffShifts = lazy(() => import("./pages/admin/staff/Shifts"));
+const StaffPayroll = lazy(() => import("./pages/admin/staff/Payroll"));
+const AttendanceReport = lazy(() => import("./pages/admin/staff/AttendanceReport"));
 
 // 🔥 Waiter Pages
 const WaiterLogin = lazy(() => import("./pages/waiter/WaiterLogin"));
@@ -84,6 +90,12 @@ function App() {
               <Route path="/admin/settings" element={<Settings />} />
               <Route path="/admin/subscription" element={<Subscription />} />
               <Route path="/admin/pos" element={<AdminPOS />} />
+              <Route path="/admin/inventory" element={<Inventory />} />
+              <Route path="/admin/staff/all" element={<AllStaff />} />
+              <Route path="/admin/staff/attendance" element={<StaffAttendance />} />
+              <Route path="/admin/staff/shifts" element={<StaffShifts />} />
+              <Route path="/admin/staff/payroll" element={<StaffPayroll />} />
+              <Route path="/admin/staff/reports" element={<AttendanceReport />} />
             </Route>
 
             {/* Waiter Routes */}

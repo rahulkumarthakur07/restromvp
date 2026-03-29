@@ -6,12 +6,14 @@ import { useOrder } from '../../context/OrderContext';
 import { ArrowLeft, Trash2, Plus, Minus, Loader2, ShoppingCart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { decryptTableId } from '../../utils/crypto';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 export default function Cart() {
   const { tableId: urlTableId } = useParams();
   const tableId = decryptTableId(urlTableId);
   const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, clearCart, addActiveOrder, settings } = useOrder();
+  const { isDark } = useDarkMode('dark');
   const [isOrdering, setIsOrdering] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
