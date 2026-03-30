@@ -49,7 +49,9 @@ import WaiterLayout from "./components/WaiterLayout";
 import KitchenLayout from "./components/KitchenLayout";
 import SplashScreen from "./components/SplashScreen";
 import LoaderScreen from "./components/LoaderScreen";
+import SubscriptionGuard from "./components/SubscriptionGuard";
 import { useState, useEffect } from "react";
+import { Outlet } from "react-router-dom";
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -77,7 +79,7 @@ function App() {
             <Route path="/admin" element={<Navigate to="/admin/login" />} />
             <Route path="/admin/login" element={<AdminLogin />} />
 
-            <Route element={<AdminLayout />}>
+            <Route element={<SubscriptionGuard><AdminLayout /></SubscriptionGuard>}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/admin/tables" element={<AdminTables />} />
@@ -102,7 +104,7 @@ function App() {
             <Route path="/waiter" element={<Navigate to="/staffs/login" />} />
             <Route path="/staffs/login" element={<WaiterLogin />} />
 
-            <Route element={<WaiterLayout />}>
+            <Route element={<SubscriptionGuard><WaiterLayout /></SubscriptionGuard>}>
               <Route path="/waiter/dashboard" element={<WaiterDashboard />} />
               <Route path="/waiter/pos" element={<WaiterPOS />} />
               <Route path="/waiter/cabins" element={<WaiterCabins />} />
@@ -110,7 +112,7 @@ function App() {
 
             {/* Kitchen Routes (Login is shared via /staffs/login) */}
             <Route path="/kitchen" element={<Navigate to="/staffs/login" />} />
-            <Route element={<KitchenLayout />}>
+            <Route element={<SubscriptionGuard><KitchenLayout /></SubscriptionGuard>}>
               <Route path="/kitchen/dashboard" element={<KitchenDashboard />} />
               <Route path="/kitchen/stock" element={<KitchenStock />} />
               <Route path="/kitchen/messages" element={<KitchenMessages />} />

@@ -26,14 +26,32 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import { useDarkMode } from "../hooks/useDarkMode";
 
 export default function AdminLayout() {
-  const isAuthenticated = localStorage.getItem("resmvp_admin_auth") === "true";
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem("resmvp_admin_auth") === "true");
+  const [user, setUser] = useState(auth.currentUser);
   const location = useLocation();
   const [settings, setSettings] = useState({});
   const { isDark, toggleDarkMode } = useDarkMode("light");
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        setIsAuthenticated(true);
+        localStorage.setItem("resmvp_admin_auth", "true");
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.removeItem("resmvp_admin_auth");
+      }
+    });
+    return () => unsub();
+  }, []);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [staffMenuOpen, setStaffMenuOpen] = useState(() => {
     return location.pathname.startsWith("/admin/staff/");
@@ -70,13 +88,18 @@ export default function AdminLayout() {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !auth.currentUser) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem("resmvp_admin_auth");
-    window.location.href = "/admin/login";
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem("resmvp_admin_auth");
+      window.location.href = "/admin/login";
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
   };
 
   const navItems = [

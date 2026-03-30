@@ -124,7 +124,7 @@ export default function AllStaff() {
                   <tr key={s.id} className={`border-b border-gray-50 hover:bg-gray-50/60 transition-all ${s.status === "inactive" ? "opacity-60" : ""} ${idx === filtered.length - 1 ? "border-b-0" : ""}`}>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center font-black text-white text-sm shadow-sm">
+                        <div className="w-9 h-9 rounded-2xl bg-linear-to-tr from-pink-500 to-rose-400 flex items-center justify-center font-black text-white text-sm shadow-sm">
                           {s.name.charAt(0).toUpperCase()}
                         </div>
                         <div>

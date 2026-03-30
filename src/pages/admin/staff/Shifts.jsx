@@ -120,7 +120,7 @@ export default function Shifts() {
                   <div className="space-y-2">
                     {members.map(s => (
                       <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-gray-50 transition-all">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center font-black text-white text-xs shadow-sm shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-pink-500 to-rose-400 flex items-center justify-center font-black text-white text-xs shadow-sm shrink-0">
                           {s.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">

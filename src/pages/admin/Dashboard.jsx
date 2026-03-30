@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2, Hotel, Zap, LayoutDashboard, MessageSquare, Trash2, FileText, Footprints } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, UtensilsCrossed, DollarSign, User, Printer, Download, Share2, Hotel, Zap, LayoutDashboard, MessageSquare, Trash2, FileText, Footprints, Wallet, X, Search } from 'lucide-react';
 import { generatePDFReceipt } from '../../utils/pdfGenerator';
 import LoaderScreen from '../../components/LoaderScreen';
 import { useNotificationSound } from '../../hooks/useNotificationSound';
@@ -17,6 +17,18 @@ export default function Dashboard() {
   const initialLoad = useRef(true);
   const [receiptModal, setReceiptModal] = useState(null);
   const { isDark } = useDarkMode('light');
+
+  // Payment & Udhar State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showUdharModal, setShowUdharModal] = useState(false);
+  const [pendingOrderData, setPendingOrderData] = useState(null);
+  const [personas, setPersonas] = useState([]);
+  const [paymentCustomerName, setPaymentCustomerName] = useState('');
+  const [paymentCustomerPhone, setPaymentCustomerPhone] = useState('');
+  const [udharSearch, setUdharSearch] = useState('');
+  const [newUdharName, setNewUdharName] = useState('');
+  const [newUdharPhone, setNewUdharPhone] = useState('');
+  const [selectedUdharForConfirm, setSelectedUdharForConfirm] = useState(null);
 
   const formatTableLabel = (tableId) => {
     if (!tableId) return 'â€”';
@@ -45,7 +57,15 @@ export default function Dashboard() {
     const cabinUnsub = onSnapshot(collection(db, 'cabins'), snap => {
       setCabins(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    return () => cabinUnsub();
+
+    const personaUnsub = onSnapshot(collection(db, 'personas'), snap => {
+      setPersonas(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => {
+      cabinUnsub();
+      personaUnsub();
+    };
   }, []);
 
   useEffect(() => {
@@ -168,6 +188,105 @@ export default function Dashboard() {
         alert("Sharing not supported on this browser.");
       }
     } catch (e) {}
+  };
+
+  const finalizePaidOrder = async (method) => {
+    if (!pendingOrderData) return;
+    try {
+      const orderRef = doc(db, 'orders', pendingOrderData.id);
+      const updatedOrder = {
+        ...pendingOrderData,
+        paid: true,
+        paymentMethod: method,
+        status: 'Completed',
+        customerName: paymentCustomerName || pendingOrderData.customerName || 'Guest',
+        customerPhone: paymentCustomerPhone || pendingOrderData.customerPhone || '',
+        finalizedAt: serverTimestamp()
+      };
+
+      await updateDoc(orderRef, {
+        paid: true,
+        paymentMethod: method,
+        status: 'Completed',
+        customerName: updatedOrder.customerName,
+        customerPhone: updatedOrder.customerPhone,
+        finalizedAt: serverTimestamp()
+      });
+
+      handlePrint(updatedOrder);
+      setShowPaymentModal(false);
+      setPendingOrderData(null);
+      setPaymentCustomerName('');
+      setPaymentCustomerPhone('');
+    } catch (error) {
+      console.error("Error finalizing paid order:", error);
+      alert("Failed to finalize payment.");
+    }
+  };
+
+  const finalizeUdharOrder = async (personaId, personaName) => {
+    if (!pendingOrderData) return;
+    try {
+      const orderRef = doc(db, 'orders', pendingOrderData.id);
+      const updatedOrder = {
+        ...pendingOrderData,
+        paid: false,
+        paymentMethod: 'udhar',
+        status: 'Completed',
+        customerName: personaName,
+        customerPhone: pendingOrderData.customerPhone || '',
+        finalizedAt: serverTimestamp()
+      };
+
+      // 1. Archive Order
+      await updateDoc(orderRef, {
+        paid: false,
+        paymentMethod: 'udhar',
+        status: 'Completed',
+        customerName: personaName,
+        finalizedAt: serverTimestamp()
+      });
+
+      // 2. Update Persona Balance
+      const personaRef = doc(db, 'personas', personaId);
+      const currentPersona = personas.find(p => p.id === personaId);
+      const newBalance = (currentPersona?.balance || 0) + pendingOrderData.totalAmount;
+      await updateDoc(personaRef, { balance: newBalance });
+
+      // 3. Record Transaction
+      await addDoc(collection(db, 'personas', personaId, 'transactions'), {
+        amount: pendingOrderData.totalAmount,
+        type: 'order',
+        orderId: pendingOrderData.id,
+        date: serverTimestamp(),
+        description: `Order #${pendingOrderData.tokenNumber} (Archived from Dashboard)`
+      });
+
+      handlePrint(updatedOrder);
+      setShowUdharModal(false);
+      setPendingOrderData(null);
+      setSelectedUdharForConfirm(null);
+    } catch (error) {
+      console.error("Error finalizing udhar order:", error);
+      alert("Failed to assign udhar.");
+    }
+  };
+
+  const handleCreateNewUdhar = async () => {
+    if (!newUdharName) return;
+    try {
+      const docRef = await addDoc(collection(db, 'personas'), {
+        name: newUdharName,
+        phone: newUdharPhone,
+        balance: 0,
+        createdAt: serverTimestamp()
+      });
+      await finalizeUdharOrder(docRef.id, newUdharName);
+      setNewUdharName('');
+      setNewUdharPhone('');
+    } catch (e) {
+      alert("Failed to create contact.");
+    }
   };
 
   if (loading) {
@@ -450,15 +569,16 @@ export default function Dashboard() {
                           {col.id === 'Served' && (
                             <>
                               <button 
-                                onClick={() => setReceiptModal(order)}
-                                className={`col-span-2 py-3 rounded-2xl text-sm font-black transition-all active:scale-95 border-2 shadow-sm flex items-center justify-center space-x-2 ${
-                                  order.paid 
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
-                                    : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-                                }`}
+                                onClick={() => {
+                                  setPendingOrderData(order);
+                                  setPaymentCustomerName(order.customerName || '');
+                                  setPaymentCustomerPhone(order.customerPhone || '');
+                                  setShowPaymentModal(true);
+                                }}
+                                className="col-span-2 py-3 rounded-2xl text-sm font-black transition-all active:scale-95 border-2 shadow-sm flex items-center justify-center space-x-2 bg-gray-950 text-white border-gray-950 hover:bg-black"
                               >
-                                <DollarSign className="w-5 h-5" />
-                                <span>{order.paid ? 'PAYMENT RECEIVED' : 'MARK AS PAID'}</span>
+                                <DollarSign className="w-5 h-5 text-emerald-400" />
+                                <span>PAY & ARCHIVE</span>
                               </button>
                               <button onClick={() => updateOrderField(order.id, 'status', 'Ready')} className="col-span-2 text-gray-400 hover:text-gray-600 py-1 rounded-xl text-xs font-bold transition-colors">
                                 Undo (Return to Ready)
@@ -540,6 +660,214 @@ export default function Dashboard() {
               >
                 Done & Archive Order
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POS-style Payment Method Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+            <div className="p-8 border-b border-gray-50 text-center relative space-y-2 bg-emerald-50/30">
+              <button onClick={() => setShowPaymentModal(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-800 bg-white border border-gray-100 hover:bg-gray-100 rounded-full w-9 h-9 flex items-center justify-center transition-colors shadow-sm">
+                ✕
+              </button>
+              <div className="w-16 h-16 bg-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">💳</span>
+              </div>
+              <h2 className="text-2xl font-black text-gray-950 mb-1">Select Payment</h2>
+              <p className="text-gray-500 font-medium text-sm">How is the customer paying {settings.currency || 'Rs.'} {pendingOrderData?.totalAmount}?</p>
+            </div>
+
+            <div className="p-6 space-y-4 bg-white">
+              <div className="space-y-3 pb-4 border-b border-gray-100">
+                <input
+                  type="text"
+                  placeholder="Customer Name (Optional)"
+                  value={paymentCustomerName}
+                  onChange={e => setPaymentCustomerName(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold outline-none focus:border-emerald-400 focus:bg-white transition-colors"
+                />
+                <input
+                  type="text"
+                  placeholder="Phone Number (Optional)"
+                  value={paymentCustomerPhone}
+                  onChange={e => setPaymentCustomerPhone(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold outline-none focus:border-emerald-400 focus:bg-white transition-colors"
+                />
+              </div>
+
+              <div className="space-y-2.5">
+                <button 
+                  onClick={() => finalizePaidOrder('cash')}
+                  className="w-full group hover:bg-emerald-50 border-2 border-gray-100 hover:border-emerald-200 py-4 rounded-2xl transition-all active:scale-95 flex items-center px-5 shrink-0"
+                >
+                  <div className="w-10 h-10 bg-gray-50 group-hover:bg-emerald-100 rounded-xl flex items-center justify-center text-xl transition-colors">💵</div>
+                  <div className="ml-4 text-left">
+                    <div className="font-black text-gray-900 group-hover:text-emerald-700 text-[13px] leading-tight mb-0.5">Pay with Cash</div>
+                    <div className="text-[10px] font-bold text-gray-400">Physical currency</div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => finalizePaidOrder('card')}
+                  className="w-full group hover:bg-blue-50 border-2 border-gray-100 hover:border-blue-200 py-4 rounded-2xl transition-all active:scale-95 flex items-center px-5 shrink-0"
+                >
+                  <div className="w-10 h-10 bg-gray-50 group-hover:bg-blue-100 rounded-xl flex items-center justify-center text-xl transition-colors">💳</div>
+                  <div className="ml-4 text-left">
+                    <div className="font-black text-gray-900 group-hover:text-blue-700 text-[13px] leading-tight mb-0.5">Pay with Card / Online</div>
+                    <div className="text-[10px] font-bold text-gray-400">UPI/QR/Card</div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setShowUdharModal(true);
+                  }}
+                  className="w-full group hover:bg-red-50 border-2 border-gray-100 hover:border-red-200 py-4 rounded-2xl transition-all active:scale-95 flex items-center px-5 shrink-0"
+                >
+                  <div className="w-10 h-10 bg-gray-50 group-hover:bg-red-100 rounded-xl flex items-center justify-center text-xl transition-colors">📒</div>
+                  <div className="ml-4 text-left">
+                    <div className="font-black text-gray-900 group-hover:text-red-700 text-[13px] leading-tight mb-0.5">Charge to Udhar</div>
+                    <div className="text-[10px] font-bold text-gray-400">Add to customer ledger</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Udhar Modal */}
+      {showUdharModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col h-[90vh] md:h-[650px] animate-in zoom-in-95 duration-300">
+            <div className="p-6 bg-white border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                  <Wallet className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-950">Add to Ledger</h2>
+                  <p className="text-sm font-bold text-gray-400">Assign {settings.currency || 'Rs.'} {pendingOrderData?.totalAmount} to a customer's Udhar</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { setShowUdharModal(false); setSelectedUdharForConfirm(null); }} 
+                className="w-12 h-12 bg-gray-50 hover:bg-gray-100 rounded-full flex items-center justify-center text-gray-500 transition-colors"
+                title="Cancel"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+              <div className="w-full md:w-1/2 flex flex-col bg-white border-r border-gray-100 shrink-0">
+                <div className="p-5 border-b border-gray-50 shrink-0">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search existing persons..."
+                      value={udharSearch}
+                      onChange={e => setUdharSearch(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold outline-none focus:border-red-400 focus:bg-white transition-colors"
+                    />
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {personas.filter(p => p.name.toLowerCase().includes(udharSearch.toLowerCase())).map(p => {
+                    const isSelected = selectedUdharForConfirm?.id === p.id;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => setSelectedUdharForConfirm(p)}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center group ${isSelected ? 'bg-red-50 border-red-300 shadow-sm' : 'bg-white border-gray-100 hover:border-red-200 hover:bg-red-50/30'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-11 h-11 rounded-xl font-black flex items-center justify-center transition-colors ${isSelected ? 'bg-red-500 text-white shadow-md' : 'bg-gray-100 text-gray-500 group-hover:bg-red-400 group-hover:text-white'}`}>
+                            {p.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-[15px] font-black text-gray-900 leading-tight">{p.name}</p>
+                            {p.phone && <p className="text-xs text-gray-400 font-bold">{p.phone}</p>}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-sm font-black ${p.balance > 0 ? 'text-red-500' : 'text-emerald-500'}`}>Rs. {Math.abs(p.balance || 0).toFixed(0)}</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">{p.balance > 0 ? 'Owes You' : 'You Owe'}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="w-full md:w-1/2 flex flex-col bg-gray-50/50 p-6 sm:p-8 overflow-y-auto">
+                {selectedUdharForConfirm ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-300 max-w-[320px] mx-auto w-full">
+                    <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6 shadow-inner border-4 border-white">
+                      <span className="text-4xl font-black text-red-500">{selectedUdharForConfirm.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="space-y-2 mb-8">
+                      <h3 className="text-2xl font-black text-gray-950 leading-tight">Assign to <br/>{selectedUdharForConfirm.name}?</h3>
+                      <p className="text-gray-500 font-bold text-sm bg-white border border-gray-200 py-2 px-4 rounded-xl mt-2">
+                        Add <span className="text-red-600 font-black">Rs. {pendingOrderData?.totalAmount}</span> to their ledger
+                      </p>
+                    </div>
+                    
+                    <div className="w-full space-y-3">
+                      <button 
+                        onClick={() => finalizeUdharOrder(selectedUdharForConfirm.id, selectedUdharForConfirm.name)} 
+                        className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black shadow-lg transition-all active:scale-95 text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle2 className="w-5 h-5" /> Confirm Assignment
+                      </button>
+                      <button 
+                        onClick={() => setSelectedUdharForConfirm(null)} 
+                        className="w-full bg-white hover:bg-gray-100 border border-gray-200 text-gray-600 py-4 rounded-2xl font-black transition-all active:scale-95 text-xs uppercase tracking-widest"
+                      >
+                        Cancel & Go Back
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col justify-center max-w-[320px] mx-auto w-full animate-in fade-in duration-300">
+                    <div className="mb-6">
+                      <div className="w-12 h-12 bg-white rounded-2xl border border-gray-100 flex items-center justify-center mb-4 shadow-sm">
+                        <User className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-black text-gray-950 mb-1">Create New Ledger</h3>
+                      <p className="text-sm text-gray-500 font-bold">Add a new person to your Udhar contacts, or select an existing one.</p>
+                    </div>
+                    <div className="space-y-4">
+                      <input
+                        type="text"
+                        placeholder="Full Name *"
+                        value={newUdharName}
+                        onChange={e => setNewUdharName(e.target.value)}
+                        className="w-full px-5 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-bold outline-none focus:border-red-400 focus:shadow-md transition-all shadow-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Phone Number (Optional)"
+                        value={newUdharPhone}
+                        onChange={e => setNewUdharPhone(e.target.value)}
+                        className="w-full px-5 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-bold outline-none focus:border-red-400 focus:shadow-md transition-all shadow-sm"
+                      />
+                      <button
+                        onClick={handleCreateNewUdhar}
+                        disabled={!newUdharName}
+                        className="w-full bg-gray-950 hover:bg-black text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50 mt-2"
+                      >
+                        Create & Assign to {newUdharName || 'New'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

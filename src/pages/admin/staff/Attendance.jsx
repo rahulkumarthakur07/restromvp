@@ -108,7 +108,7 @@ export default function Attendance() {
                   <div key={s.id} className="flex flex-col">
                     <div className="flex items-center justify-between px-5 py-4 hover:bg-gray-50/60 transition-all">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center font-extrabold text-white text-sm shadow-sm shrink-0">
+                        <div className="w-10 h-10 rounded-2xl bg-linear-to-tr from-pink-500 to-rose-400 flex items-center justify-center font-extrabold text-white text-sm shadow-sm shrink-0">
                           {s.name.charAt(0).toUpperCase()}
                         </div>
                         <div>

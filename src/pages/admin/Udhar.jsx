@@ -143,17 +143,17 @@ export default function Udhar() {
               <p className="text-gray-400 font-medium text-sm">Track money given and received from customers.</p>
             </div>
             <div className="flex flex-wrap md:flex-nowrap gap-3 md:gap-4 w-full md:w-auto mt-4 md:mt-0">
-              <div className="flex-1 md:flex-none relative overflow-hidden px-5 py-4 bg-gradient-to-br from-rose-500 to-red-600 rounded-3xl shadow-lg shadow-red-500/30 flex flex-col justify-center min-w-[130px]">
+              <div className="flex-1 md:flex-none relative overflow-hidden px-5 py-4 bg-linear-to-br from-rose-500 to-red-600 rounded-3xl shadow-lg shadow-red-500/30 flex flex-col justify-center min-w-[130px]">
                 <div className="absolute top-0 right-0 -mr-6 -mt-6 w-20 h-20 bg-white/20 rounded-full blur-2xl pointer-events-none" />
                 <span className="text-[10px] font-black text-red-100 uppercase tracking-widest mb-1 flex items-center gap-1.5"><ArrowUpRight className="w-3 h-3"/> I Owe</span>
                 <span className="block text-xl md:text-2xl font-black text-white leading-none tracking-tight">Rs. {iOweThem.toFixed(0)}</span>
               </div>
-              <div className="flex-1 md:flex-none relative overflow-hidden px-5 py-4 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-lg shadow-emerald-500/30 flex flex-col justify-center min-w-[130px]">
+              <div className="flex-1 md:flex-none relative overflow-hidden px-5 py-4 bg-linear-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-lg shadow-emerald-500/30 flex flex-col justify-center min-w-[130px]">
                 <div className="absolute top-0 right-0 -mr-6 -mt-6 w-20 h-20 bg-white/20 rounded-full blur-2xl pointer-events-none" />
                 <span className="text-[10px] font-black text-emerald-100 uppercase tracking-widest mb-1 flex items-center gap-1.5"><ArrowDownLeft className="w-3 h-3"/> They Owe</span>
                 <span className="block text-xl md:text-2xl font-black text-white leading-none tracking-tight">Rs. {theyOweMe.toFixed(0)}</span>
               </div>
-              <div className={`flex-1 md:flex-none w-full md:w-auto relative overflow-hidden px-5 py-4 bg-gradient-to-br ${netBalance >= 0 ? 'from-blue-600 to-cyan-500 shadow-blue-500/30' : 'from-gray-800 to-gray-950 shadow-gray-900/30'} rounded-3xl shadow-lg flex flex-col justify-center min-w-[140px]`}>
+              <div className={`flex-1 md:flex-none w-full md:w-auto relative overflow-hidden px-5 py-4 bg-linear-to-br ${netBalance >= 0 ? 'from-blue-600 to-cyan-500 shadow-blue-500/30' : 'from-gray-800 to-gray-950 shadow-gray-900/30'} rounded-3xl shadow-lg flex flex-col justify-center min-w-[140px]`}>
                 <div className="absolute top-0 right-0 -mr-6 -mt-6 w-20 h-20 bg-white/20 rounded-full blur-2xl pointer-events-none" />
                 <span className={`text-[10px] font-black ${netBalance >= 0 ? 'text-blue-100' : 'text-gray-400'} uppercase tracking-widest mb-1 flex items-center gap-1.5`}><Wallet className="w-3 h-3"/> Net Balance</span>
                 <span className="block text-2xl md:text-3xl font-black text-white leading-none tracking-tight">{netBalance < 0 ? '-' : ''}Rs. {Math.abs(netBalance).toFixed(0)}</span>
@@ -267,16 +267,16 @@ export default function Udhar() {
                   onClick={() => setSelectedPersona(p)}
                   className={`p-4 border-b border-gray-50 cursor-pointer transition-all flex justify-between items-center group relative ${
                     selectedPersona?.id === p.id
-                      ? 'bg-gradient-to-r from-blue-50/50 to-transparent'
+                      ? 'bg-linear-to-r from-blue-50/50 to-transparent'
                       : 'hover:bg-gray-50/80 active:bg-gray-100'
                   }`}
                 >
                   {selectedPersona?.id === p.id && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-cyan-400 rounded-r-full" />
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-blue-500 to-cyan-400 rounded-r-full" />
                   )}
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm transition-all ${
-                      selectedPersona?.id === p.id ? 'bg-gradient-to-tr from-blue-600 to-cyan-400 text-white shadow-lg shadow-blue-500/30' : 'bg-gradient-to-tr from-gray-100 to-gray-200 text-gray-500 shadow-sm border border-white'
+                      selectedPersona?.id === p.id ? 'bg-linear-to-tr from-blue-600 to-cyan-400 text-white shadow-lg shadow-blue-500/30' : 'bg-linear-to-tr from-gray-100 to-gray-200 text-gray-500 shadow-sm border border-white'
                     }`}>
                       {p.name.charAt(0).toUpperCase()}
                     </div>
@@ -322,7 +322,7 @@ export default function Udhar() {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-cyan-400 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-500/30">
+                  <div className="w-10 h-10 bg-linear-to-tr from-blue-600 to-cyan-400 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-500/30">
                     {selectedPersona.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -352,10 +352,10 @@ export default function Udhar() {
                     const isGave = t.type === 'gave';
                     return (
                       <div key={t.id || idx} className={`flex ${isGave ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] md:max-w-[75%] rounded-[2rem] p-5 shadow-sm hover:shadow-md transition-shadow relative ${
+                        <div className={`max-w-[85%] md:max-w-[75%] rounded-4xl p-5 shadow-sm hover:shadow-md transition-shadow relative ${
                           isGave
-                            ? 'bg-gradient-to-br from-white to-rose-50/80 border border-red-100/60 rounded-tr-sm'
-                            : 'bg-gradient-to-br from-white to-emerald-50/80 border border-emerald-100/60 rounded-tl-sm'
+                            ? 'bg-linear-to-br from-white to-rose-50/80 border border-red-100/60 rounded-tr-sm'
+                            : 'bg-linear-to-br from-white to-emerald-50/80 border border-emerald-100/60 rounded-tl-sm'
                         }`}>
                           <div className="flex items-center gap-2 mb-2">
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isGave ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-500'}`}>
@@ -398,7 +398,7 @@ export default function Udhar() {
               </div>
 
               {/* Input Area */}
-              <div className="bg-gradient-to-t from-gray-50 flex-col border-t border-gray-100 p-4 md:p-6 shrink-0 relative">
+              <div className="bg-linear-to-t from-gray-50 flex-col border-t border-gray-100 p-4 md:p-6 shrink-0 relative">
                 <div className="bg-white w-full rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-gray-200/60 p-2 relative overflow-hidden">
                   <div className="flex flex-col md:flex-row gap-2">
                     <div className="relative w-full md:w-48 shrink-0 bg-gray-50/50 rounded-2xl border border-gray-100 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-300 transition-all">
@@ -423,14 +423,14 @@ export default function Udhar() {
                     <button
                       onClick={() => handleTransaction('gave')}
                       disabled={!newAmount}
-                      className="flex-1 bg-gradient-to-tr from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 text-white font-black rounded-2xl border-none shadow-lg shadow-red-500/25 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 py-3.5 text-xs uppercase tracking-widest active:scale-95"
+                      className="flex-1 bg-linear-to-tr from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 text-white font-black rounded-2xl border-none shadow-lg shadow-red-500/25 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 py-3.5 text-xs uppercase tracking-widest active:scale-95"
                     >
                       <ArrowUpRight className="w-4 h-4" /> Give Udhar
                     </button>
                     <button
                       onClick={() => handleTransaction('received')}
                       disabled={!newAmount}
-                      className="flex-1 bg-gradient-to-tr from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black rounded-2xl border-none shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 py-3.5 text-xs uppercase tracking-widest active:scale-95"
+                      className="flex-1 bg-linear-to-tr from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black rounded-2xl border-none shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 py-3.5 text-xs uppercase tracking-widest active:scale-95"
                     >
                       <ArrowDownLeft className="w-4 h-4" /> Received
                     </button>
