@@ -15,12 +15,11 @@ export default function OrderStatus() {
   const { tableId: urlTableId } = useParams();
   const tableId = decryptTableId(urlTableId);
   const navigate = useNavigate();
-  const { activeOrders } = useOrder();
+  const { activeOrders, settings } = useOrder();
   
   const [liveOrders, setLiveOrders] = useState({});
   const [ordersAheadMap, setOrdersAheadMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState({});
   const [dismissedBills, setDismissedBills] = useState(() => JSON.parse(localStorage.getItem('resmvp_dismissed_bills') || '[]'));
   const { isDark, toggleDarkMode } = useDarkMode('dark');
   
@@ -33,42 +32,7 @@ export default function OrderStatus() {
     localStorage.setItem('resmvp_dismissed_bills', JSON.stringify(dismissedBills));
   }, [dismissedBills]);
 
-  // Handle eSewa Payment Callback
   useEffect(() => {
-    const checkEsewaCallback = async () => {
-      const searchParams = new URLSearchParams(window.location.search);
-      const dataParam = searchParams.get('data');
-      if (dataParam) {
-        try {
-          // Decode URL-safe base64
-          const decodedStr = atob(dataParam.replace(/-/g, '+').replace(/_/g, '/'));
-          const decoded = JSON.parse(decodedStr);
-          if (decoded.status === 'COMPLETE') {
-            const orderId = decoded.transaction_uuid.split('-')[0];
-            await updateDoc(doc(db, 'orders', orderId), { paid: true });
-            
-            // Remove URL params to prevent re-triggering
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-            window.history.replaceState({path: newUrl}, '', newUrl);
-            alert("Payment Successful! Thank you.");
-          }
-        } catch (err) {
-          console.error("Error decoding eSewa callback", err);
-        }
-      }
-    };
-    checkEsewaCallback();
-  }, []);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const snap = await getDoc(doc(db, 'settings', 'general'));
-        if (snap.exists()) setSettings(snap.data());
-      } catch (e) {}
-    };
-    fetchSettings();
-
     // Live query: ALL non-Completed orders for this table (covers waiter-placed orders too)
     const tableQuery = query(
       collection(db, 'orders'),
@@ -126,68 +90,6 @@ export default function OrderStatus() {
 
   const handleDownloadReceipt = async (order) => {
     await generatePDFReceipt(order, settings);
-  };
-
-  const handleEsewaPayment = async (order) => {
-    try {
-      // Force clean 2-decimal maximum string and parse back to drop trailing zeros mapping floating point errors.
-      const cleanAmountStr = Number(order.totalAmount.toFixed(2)).toString();
-      
-      if (Number(cleanAmountStr) <= 0) {
-        alert("Amount must be greater than 0 to pay with eSewa.");
-        return;
-      }
-
-      const transactionUuid = `${order.id}-${Date.now()}`;
-      const totalAmount = cleanAmountStr;
-      const productCode = 'EPAYTEST';
-      const secret = '8gBm/:&EnhH.1/q';
-      // HMAC SHA256 of: total_amount,transaction_uuid,product_code
-      const message = `total_amount=${totalAmount},transaction_uuid=${transactionUuid},product_code=${productCode}`;
-      
-      const encoder = new TextEncoder();
-      const keyInfo = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(secret),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign']
-      );
-      const signatureBuffer = await crypto.subtle.sign('HMAC', keyInfo, encoder.encode(message));
-      const signature = btoa(String.fromCharCode.apply(null, new Uint8Array(signatureBuffer)));
-
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = 'https://rc-epay.esewa.com.np/api/epay/main/v2/form';
-
-      const fields = {
-        amount: totalAmount,
-        tax_amount: '0',
-        total_amount: totalAmount,
-        transaction_uuid: transactionUuid,
-        product_code: productCode,
-        product_service_charge: '0',
-        product_delivery_charge: '0',
-        success_url: window.location.href.split('?')[0],
-        failure_url: window.location.href.split('?')[0],
-        signed_field_names: 'total_amount,transaction_uuid,product_code',
-        signature: signature
-      };
-
-      Object.keys(fields).forEach(key => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = fields[key];
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      form.submit();
-    } catch (err) {
-      console.error("eSewa payment initiation failed:", err);
-      alert("Failed to initiate payment. Please try again.");
-    }
   };
 
   if (loading) {
@@ -308,15 +210,15 @@ export default function OrderStatus() {
                     <span>Subtotal</span>
                     <span>Rs. {(order.subtotal || (order.totalAmount - (order.taxAmount || 0) - (order.serviceChargeAmount || 0))).toFixed(0)}</span>
                   </div>
-                  {order.serviceChargeAmount > 0 && (
+                  {settings.serviceChargeEnabled && order.serviceChargeAmount > 0 && (
                     <div className="flex justify-between text-xs font-bold text-amber-600 uppercase">
                       <span>Service Charge</span>
                       <span>Rs. {order.serviceChargeAmount.toFixed(0)}</span>
                     </div>
                   )}
-                  {order.taxAmount > 0 && (
+                  {settings.taxEnabled && order.taxAmount > 0 && (
                     <div className="flex justify-between text-xs font-bold text-blue-600 uppercase">
-                      <span>VAT</span>
+                      <span>{settings.taxName || 'VAT'}</span>
                       <span>Rs. {order.taxAmount.toFixed(0)}</span>
                     </div>
                   )}
@@ -331,15 +233,6 @@ export default function OrderStatus() {
                   </div>
                   <span>Rs. {order.totalAmount.toFixed(0)}</span>
                 </div>
-
-                {!order.paid && (
-                  <button 
-                    onClick={() => handleEsewaPayment(order)}
-                    className="w-full bg-[#60bb46] hover:bg-[#52a33b] text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center space-x-2 mb-3"
-                  >
-                    <span>Pay with eSewa</span>
-                  </button>
-                )}
 
                 {(order.status === 'Served' || order.status === 'Completed') && (
                   <button 
@@ -410,15 +303,15 @@ export default function OrderStatus() {
                   <span>Subtotal</span>
                   <span>Rs. {(activeModalOrder.subtotal || (activeModalOrder.totalAmount - (activeModalOrder.taxAmount || 0) - (activeModalOrder.serviceChargeAmount || 0))).toFixed(0)}</span>
                 </div>
-                {activeModalOrder.serviceChargeAmount > 0 && (
+                {settings.serviceChargeEnabled && activeModalOrder.serviceChargeAmount > 0 && (
                   <div className="flex justify-between text-sm font-bold text-amber-600 uppercase">
                     <span>Service Charge</span>
                     <span>Rs. {activeModalOrder.serviceChargeAmount.toFixed(0)}</span>
                   </div>
                 )}
-                {activeModalOrder.taxAmount > 0 && (
+                {settings.taxEnabled && activeModalOrder.taxAmount > 0 && (
                   <div className="flex justify-between text-sm font-bold text-blue-600 uppercase">
-                    <span>VAT</span>
+                    <span>{settings.taxName || 'VAT'}</span>
                     <span>Rs. {activeModalOrder.taxAmount.toFixed(0)}</span>
                   </div>
                 )}
@@ -431,14 +324,6 @@ export default function OrderStatus() {
             </div>
 
             <div className="p-5 bg-gray-50 border-t border-gray-100 flex flex-col gap-3">
-              {!activeModalOrder.paid && (
-                <button 
-                  onClick={() => handleEsewaPayment(activeModalOrder)}
-                  className="w-full bg-[#60bb46] hover:bg-[#52a33b] text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center space-x-2"
-                >
-                  <span>Pay with eSewa</span>
-                </button>
-              )}
               <button 
                 onClick={() => handleDownloadReceipt(activeModalOrder)}
                 className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center space-x-2"

@@ -256,6 +256,8 @@ export default function AdminPOS() {
       }
 
       const docRef = await addDoc(collection(db, 'orders'), orderData);
+      
+
       orderData.id = docRef.id;
       
       if (isDirectBill) {
@@ -294,6 +296,8 @@ export default function AdminPOS() {
         customerPhone: paymentCustomerPhone || ''
       };
       const docRef = await addDoc(collection(db, 'orders'), finalOrderData);
+      
+
       finalOrderData.id = docRef.id;
       
       setShowPaymentModal(false);
@@ -334,6 +338,8 @@ export default function AdminPOS() {
 
       // 1. Create order
       const orderRef = await addDoc(collection(db, 'orders'), finalOrderData);
+      
+
       finalOrderData.id = orderRef.id;
 
       // 2. Add transaction to persona

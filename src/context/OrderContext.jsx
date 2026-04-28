@@ -35,17 +35,21 @@ export const OrderProvider = ({ children }) => {
     }
   }, [activeOrders]);
 
-  // Global fetch for products and settings
+  // Real-time Settings Listener
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'general'), (snap) => {
+      if (snap.exists()) {
+        setSettings(snap.data());
+      }
+    });
+    return unsub;
+  }, []);
+
+  // Global fetch for products
   const fetchGlobalData = useCallback(async () => {
     if (isDataLoaded) return;
     try {
-      const [settingsSnap, productsSnap] = await Promise.all([
-        getDoc(doc(db, 'settings', 'general')),
-        getDocs(collection(db, 'products'))
-      ]);
-      
-      if (settingsSnap.exists()) setSettings(settingsSnap.data());
-      
+      const productsSnap = await getDocs(collection(db, 'products'));
       const pList = productsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       
       // Fallback to mock if empty

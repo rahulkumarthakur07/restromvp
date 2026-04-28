@@ -83,6 +83,7 @@ export default function Cart() {
 
       const docRef = await addDoc(collection(db, 'orders'), orderData);
       
+      
       // Save to context
       addActiveOrder({
         id: docRef.id,
@@ -203,7 +204,7 @@ export default function Cart() {
 
               {settings.taxEnabled && (
                 <div className="flex justify-between text-gray-500 text-sm">
-                  <span>Tax ({settings.taxRate}%)</span>
+                  <span>{settings.taxName || 'Tax'} ({settings.taxRate}%)</span>
                   <span>{currency}{taxAmount.toFixed(2)}</span>
                 </div>
               )}

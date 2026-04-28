@@ -149,8 +149,12 @@ export default function Menu() {
       <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-40 px-4 pt-4 pb-2 border-b border-gray-100 dark:border-gray-800 transition-colors duration-300">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-              <Hotel className="w-6 h-6 text-blue-600" />
+            <div className="p-1 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 w-10 h-10 flex items-center justify-center overflow-hidden">
+              {settings.logo ? (
+                <img src={settings.logo} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <Hotel className="w-6 h-6 text-blue-600" />
+              )}
             </div>
             <div className="flex flex-col">
               <h1 className="text-xl font-black text-gray-950 dark:text-white tracking-tight leading-none">{settings.name || 'Digital Menu'}</h1>

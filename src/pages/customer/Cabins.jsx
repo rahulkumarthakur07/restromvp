@@ -6,12 +6,14 @@ import { ArrowLeft, Users, Hotel, CheckCircle2, X } from 'lucide-react';
 import { decryptTableId } from '../../utils/crypto';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import LoaderScreen from '../../components/LoaderScreen';
+import { useOrder } from '../../context/OrderContext';
 
 export default function Cabins() {
   const { tableId: urlTableId } = useParams();
   const tableId = decryptTableId(urlTableId);
   const navigate = useNavigate();
   const { isDark } = useDarkMode('dark');
+  const { settings } = useOrder();
 
   const [cabins, setCabins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,8 +61,14 @@ export default function Cabins() {
         <button onClick={() => navigate(`/table/${urlTableId}`)} className={`p-2 -ml-2 rounded-full ${isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`}>
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <div className="flex items-center gap-2">
-          <Hotel className="w-6 h-6 text-indigo-500" />
+        <div className="flex items-center gap-3">
+          <div className="p-1 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 w-10 h-10 flex items-center justify-center overflow-hidden">
+            {settings.logo ? (
+              <img src={settings.logo} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <Hotel className="w-6 h-6 text-indigo-500" />
+            )}
+          </div>
           <h1 className={`text-xl font-black ${isDark ? 'text-white' : 'text-gray-800'}`}>Cabins & VIP Rooms</h1>
         </div>
       </header>
