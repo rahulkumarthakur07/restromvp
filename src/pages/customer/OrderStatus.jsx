@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, getDoc, collection, query, where, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useOrder } from '../../context/OrderContext';
-import { Loader2, CheckCircle2, Clock, ChefHat, ArrowLeft, UtensilsCrossed, ReceiptText, Download, X, Sun, Moon } from 'lucide-react';
-import { generatePDFReceipt } from '../../utils/pdfGenerator';
+import { Loader2, CheckCircle2, Clock, ChefHat, ArrowLeft, UtensilsCrossed, ReceiptText, X, Sun, Moon } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import LoaderScreen from '../../components/LoaderScreen';
 import { decryptTableId } from '../../utils/crypto';
@@ -88,9 +87,6 @@ export default function OrderStatus() {
     return () => unsub();
   }, [liveOrders]);
 
-  const handleDownloadReceipt = async (order) => {
-    await generatePDFReceipt(order, settings);
-  };
 
   if (loading) {
     return <LoaderScreen message="Loading your orders..." />;
@@ -323,15 +319,6 @@ export default function OrderStatus() {
               </div>
             </div>
 
-            <div className="p-5 bg-gray-50 border-t border-gray-100 flex flex-col gap-3">
-              <button 
-                onClick={() => handleDownloadReceipt(activeModalOrder)}
-                className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center space-x-2"
-              >
-                <Download className="w-5 h-5" />
-                <span>Download Receipt</span>
-              </button>
-            </div>
           </div>
         </div>
       )}

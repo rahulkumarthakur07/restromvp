@@ -8,13 +8,11 @@ import {
   Plus,
   Minus,
   Search,
-  Sun,
-  Moon,
   Hotel,
   UtensilsCrossed,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useDarkMode } from "../../hooks/useDarkMode";
 import LoaderScreen from "../../components/LoaderScreen";
 import { decryptTableId } from "../../utils/crypto";
 
@@ -41,7 +39,7 @@ export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [settings, setSettings] = useState(globalSettings);
   const [showSplash, setShowSplash] = useState(!isDataLoaded);
-  const { isDark, toggleDarkMode } = useDarkMode('dark');
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   // For MVP without DB data, we use some mock products if DB is empty
   const mockProducts = [
@@ -163,13 +161,6 @@ export default function Menu() {
           </div>
 
           <div className="flex items-center space-x-2">
-            <button 
-              onClick={toggleDarkMode}
-              className="p-2.5 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all border border-transparent active:scale-95 shadow-sm"
-              aria-label="Toggle Theme"
-            >
-              {isDark ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
-            </button>
             {activeOrders && activeOrders.length > 0 && (
               <button 
                 onClick={() => navigate(`/table/${urlTableId}/status`)}
@@ -244,13 +235,16 @@ export default function Menu() {
                     key={product.id}
                     className="bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col hover:shadow-md transition-shadow h-full"
                   >
-                    <div className="aspect-video bg-gray-100 dark:bg-gray-800 relative group-hover:scale-105 transition-transform duration-500 overflow-hidden">
-                      <img 
-                        src={product.image || `https://placehold.co/400x300?text=${encodeURIComponent(product.name)}`} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+                      <div 
+                        className="aspect-square bg-gray-100 dark:bg-gray-800 relative group-hover:scale-105 transition-transform duration-500 overflow-hidden cursor-pointer"
+                        onClick={() => setSelectedProduct(product)}
+                      >
+                        <img 
+                          src={product.image || `https://placehold.co/400x300?text=${encodeURIComponent(product.name)}`} 
+                          alt={product.name} 
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
                       {product.outOfStock && (
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-2 z-20">
                           <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Out of Stock</span>
@@ -269,19 +263,24 @@ export default function Menu() {
                         </div>
                       )}
                     </div>
-                    <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
+                    <div className="p-4 flex-1 flex flex-col justify-between">
                       <div>
-                        <h3 className="text-base font-black text-gray-950 dark:text-white leading-tight mb-1">{product.name}</h3>
-                        <div className="flex flex-col">
+                        <h3 className="text-[15px] font-black text-gray-950 dark:text-white leading-tight mb-1 tracking-tight group-hover:text-blue-600 transition-colors">{product.name}</h3>
+                        {product.description && (
+                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.05em] mb-3 line-clamp-2 leading-relaxed">{product.description}</p>
+                        )}
+                        <div className="flex items-center">
                           {product.discountPrice ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-black text-green-600 truncate">{currency} {Number(product.discountPrice).toFixed(0)}</span>
-                              <span className="text-xs text-gray-400 line-through truncate">{currency} {Number(product.price).toFixed(0)}</span>
+                            <div className="flex items-center gap-2 bg-green-50 dark:bg-green-500/10 px-3 py-1.5 rounded-xl border border-green-100 dark:border-green-500/20">
+                              <span className="text-sm font-black text-green-600 dark:text-green-400">{currency}{Number(product.discountPrice).toFixed(0)}</span>
+                              <span className="text-[10px] text-green-300 dark:text-green-700 line-through font-bold">{currency}{Number(product.price).toFixed(0)}</span>
                             </div>
                           ) : (
-                            <span className="text-lg font-black text-gray-950 dark:text-white">
-                              {currency} {Number(product.price).toFixed(0)}
-                            </span>
+                            <div className="bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                              <span className="text-sm font-black text-gray-950 dark:text-white">
+                                {currency}{Number(product.price).toFixed(0)}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -350,6 +349,92 @@ export default function Menu() {
           </button>
         </motion.div>
       )}
+
+      {/* Product Detail Modal */}
+      <AnimatePresence>
+        {selectedProduct && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProduct(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-[2.5rem] overflow-hidden shadow-2xl"
+            >
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="absolute top-4 right-4 z-10 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              
+              <div className="aspect-square w-full">
+                <img 
+                  src={selectedProduct.image || `https://placehold.co/400x300?text=${encodeURIComponent(selectedProduct.name)}`} 
+                  alt={selectedProduct.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              
+              <div className="p-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-2 block">{selectedProduct.category}</span>
+                    <h2 className="text-4xl font-black text-gray-950 dark:text-white leading-tight tracking-tight">{selectedProduct.name}</h2>
+                  </div>
+                  <div className="shrink-0">
+                    {selectedProduct.discountPrice ? (
+                      <div className="bg-green-50 dark:bg-green-500/10 px-6 py-3 rounded-2xl border border-green-100 dark:border-green-500/20 text-center">
+                        <span className="text-3xl font-black text-green-600 dark:text-green-400 block leading-none">{currency}{Number(selectedProduct.discountPrice).toFixed(0)}</span>
+                        <span className="text-xs text-green-300 dark:text-green-700 line-through font-bold mt-1 block uppercase tracking-widest">{currency}{Number(selectedProduct.price).toFixed(0)}</span>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <span className="text-3xl font-black text-gray-950 dark:text-white leading-none">
+                          {currency}{Number(selectedProduct.price).toFixed(0)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {selectedProduct.description && (
+                  <div className="mb-8">
+                    <h4 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Product Details</h4>
+                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
+                      {selectedProduct.description}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="flex gap-4">
+                  {selectedProduct.outOfStock ? (
+                    <div className="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-400 py-4 rounded-2xl text-center font-black uppercase tracking-widest cursor-not-allowed">
+                      Currently Unavailable
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        addToCart(selectedProduct);
+                        setSelectedProduct(null);
+                      }}
+                      className="flex-1 bg-gray-950 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-700 text-white py-4 rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-5 h-5" /> Add to Order
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

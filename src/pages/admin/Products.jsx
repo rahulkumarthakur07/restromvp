@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Plus, Trash2, Edit2, Package, Search, Download, FileUp, CheckCircle2, AlertCircle, Tag, History as HistoryIcon } from 'lucide-react';
@@ -8,7 +8,7 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', discountPrice: '', category: '', image: '', inStock: true });
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', discountPrice: '', category: '', image: '', inStock: true, description: '' });
   const [editingId, setEditingId] = useState(null);
   const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
   const [imageFile, setImageFile] = useState(null);
@@ -56,7 +56,8 @@ export default function Products() {
       price: product.price.toString(),
       discountPrice: product.discountPrice ? product.discountPrice.toString() : '',
       category: product.category,
-      image: product.image
+      image: product.image,
+      description: product.description || ''
     });
     setEditingId(product.id);
     setIsCreatingNewCategory(!existingCategories.includes(product.category));
@@ -74,7 +75,7 @@ export default function Products() {
 
   const resetForm = () => {
     setShowAddForm(false);
-    setNewProduct({ name: '', price: '', discountPrice: '', category: existingCategories[0] || '', image: '', inStock: true });
+    setNewProduct({ name: '', price: '', discountPrice: '', category: existingCategories[0] || '', image: '', inStock: true, description: '' });
     setImageFile(null);
     setEditingId(null);
     setIsCreatingNewCategory(existingCategories.length === 0);
@@ -109,7 +110,8 @@ export default function Products() {
         discountPrice: newProduct.discountPrice ? parseFloat(newProduct.discountPrice) : null,
         category: newProduct.category || 'Uncategorized',
         image: imageUrl || `https://placehold.co/400x300?text=${encodeURIComponent(newProduct.name)}`,
-        outOfStock: !newProduct.inStock
+        outOfStock: !newProduct.inStock,
+        description: newProduct.description || ''
       };
 
       if (editingId) {
@@ -531,6 +533,16 @@ export default function Products() {
                       </label>
                     </div>
                   </div>
+                </div>
+
+                <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                  <label className="text-sm font-black text-gray-950 px-1">Product Description (Optional)</label>
+                  <textarea 
+                    value={newProduct.description} 
+                    onChange={e => setNewProduct({...newProduct, description: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-sm min-h-[100px] resize-none"
+                    placeholder="Enter short description or ingredients..."
+                  />
                 </div>
               </div>
 
